@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="43.18cm" height="27.94cm" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
+viewBox="0 0 43.18 27.94"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+ <defs>
+  <style type="text/css">
+   <![CDATA[
+    .str0 {stroke:#C2C1C1;stroke-width:0.00762}
+    .str2 {stroke:#00948A;stroke-width:0.00762}
+    .str1 {stroke:#005756;stroke-width:0.05}
+    .fil2 {fill:none}
+    .fil0 {fill:white}
+    .fil3 {fill:#005655}
+    .fil1 {fill:#005756}
+    .fil4 {fill:#00948A}
+   ]]>
+  </style>
+ </defs>
+ <g id="Capa_x0020_1">
+   <rect id="_95165800" class="fil0 str0" x="11.3284" y="5.41323" width="19.4894" height="4.39514"/>
+   <g>
+    <circle id="_95165728" class="fil0" transform="matrix(0.415874 0.163094 -0.163094 0.415874 13.0556 6.32321)" r="0.27405"/>
+    <circle id="_95165656" class="fil0" transform="matrix(0.523601 0.205342 -0.205342 0.523601 11.8929 7.21522)" r="0.27405"/>
+    <circle id="_95165584" class="fil0" transform="matrix(0.309098 0.12122 -0.12122 0.309098 13.2748 7.98886)" r="0.27405"/>
+    <circle id="_95136320" class="fil0" transform="matrix(0.523601 0.205342 -0.205342 0.523601 12.7175 8.85256)" r="0.27405"/>
+    <circle id="_95136248" class="fil3" transform="matrix(0.658708 0.258328 -0.258328 0.658708 13.0556 6.32321)" r="0.27405"/>
+    <circle id="_95136176" class="fil3" transform="matrix(0.66167 0.259489 -0.259489 0.66167 13.9629 7.23089)" r="0.27405"/>
+    <circle id="_95136104" class="fil3" transform="matrix(0.489584 0.192002 -0.192002 0.489584 13.2748 7.98886)" r="0.27405"/>
+    <line id="_95136032" class="fil2 str1" x1="13.1055" y1="8.21852" x2="12.897" y2= "8.54745" />
+    <line id="_95135960" class="fil2 str1" x1="12.1521" y1="7.39475" x2="13.108" y2= "7.89134" />
+    <line id="_95135888" class="fil2 str1" x1="13.78" y1="7.42327" x2="13.4004" y2= "7.83531" />
+    <line id="_95135816" class="fil2 str1" x1="12.857" y1="6.45602" x2="12.1191" y2= "7.0223" />
+    <line id="_95135744" class="fil2 str1" x1="13.2562" y1="6.49856" x2="13.7856" y2= "7.07018" />
+    <circle id="_95135672" class="fil3" transform="matrix(0.829338 0.325244 -0.325244 0.829338 12.7175 8.85256)" r="0.27405"/>
+    <circle id="_95135600" class="fil0" transform="matrix(0.415874 0.163094 -0.163094 0.415874 13.0556 6.32321)" r="0.27405"/>
+    <circle id="_95135528" class="fil0" transform="matrix(0.417744 0.163828 -0.163828 0.417744 13.9629 7.23089)" r="0.27405"/>
+    <circle id="_95135456" class="fil3" transform="matrix(0.829338 0.325244 -0.325244 0.829338 11.8929 7.21522)" r="0.27405"/>
+    <circle id="_95135384" class="fil0" transform="matrix(0.523601 0.205342 -0.205342 0.523601 11.8929 7.21522)" r="0.27405"/>
+    <circle id="_95135312" class="fil0" transform="matrix(0.309098 0.12122 -0.12122 0.309098 13.2748 7.98886)" r="0.27405"/>
+    <circle id="_95135240" class="fil0" transform="matrix(0.523601 0.205342 -0.205342 0.523601 12.7175 8.85256)" r="0.27405"/>
+   </g>
+        
+  
+ </g>
+</svg>
