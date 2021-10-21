@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-abstract contract BaseIlluvatar is ERC721Upgradeable, OwnableUpgradeable {
+abstract contract BaseIlluvatar is ERC721EnumerableUpgradeable, OwnableUpgradeable {
     event MinterUpdated(address indexed minter);
 
     address public minter;
@@ -16,6 +16,7 @@ abstract contract BaseIlluvatar is ERC721Upgradeable, OwnableUpgradeable {
         address _minter
     ) internal initializer {
         __ERC721_init(name_, symbol_);
+        __ERC721Enumerable_init();
         __Ownable_init();
 
         minter = _minter;
