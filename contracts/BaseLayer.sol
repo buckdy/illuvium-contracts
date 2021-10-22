@@ -20,6 +20,14 @@ contract BaseLayer is BaseIlluvatar {
     mapping(uint256 => Metadata) private _metadatas;
     mapping(Accessory => address) public accessoryIlluvatars;
 
+    function initialize(
+        string memory name_,
+        string memory symbol_,
+        address _minter
+    ) internal initializer {
+        __BaseIlluvatar_init(name_, symbol_, _minter);
+    }
+
     function combine(
         uint256 tokenId,
         Accessory[] calldata types,
