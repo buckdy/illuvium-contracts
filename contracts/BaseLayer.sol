@@ -23,9 +23,17 @@ contract BaseLayer is BaseIlluvatar {
     function initialize(
         string memory name_,
         string memory symbol_,
-        address _minter
+        address _minter,
+        address _eyeAddr,
+        address _bodyAddr,
+        address _mouthAddr,
+        address _headAddr
     ) internal initializer {
         __BaseIlluvatar_init(name_, symbol_, _minter);
+        accessoryIlluvatars[Accessory.EYE] = _eyeAddr;
+        accessoryIlluvatars[Accessory.BODY] = _bodyAddr;
+        accessoryIlluvatars[Accessory.MOUTH] = _mouthAddr;
+        accessoryIlluvatars[Accessory.HEAD] = _headAddr;
     }
 
     function combine(
