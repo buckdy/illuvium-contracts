@@ -5,13 +5,14 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol"
 import "./BaseIlluvatar.sol";
 
 contract BaseLayer is BaseIlluvatar {
+    //Semi-Random Accessory Items
     enum Accessory {
         EYE,
         BODY,
         MOUTH,
         HEAD
     }
-
+    //Metadata for each accessories
     struct Metadata {
         uint8 tier;
         mapping(Accessory => uint256) accessories;
@@ -20,6 +21,16 @@ contract BaseLayer is BaseIlluvatar {
     mapping(uint256 => Metadata) private _metadatas;
     mapping(Accessory => address) public accessoryIlluvatars;
 
+    /**
+        @notice Initialize Base Layer.
+        @param name_ NFT Name.
+        @param symbol_ NFT Symbol.
+        @param _minter NFT Minter Address.
+        @param _eyeAddr Eye accessory address.
+        @param _bodyAddr Body accessory address.
+        @param _mouthAddr Mouth accessory address.
+        @param _headAddr Head accessory address.
+     */
     function initialize(
         string memory name_,
         string memory symbol_,
@@ -36,6 +47,12 @@ contract BaseLayer is BaseIlluvatar {
         accessoryIlluvatars[Accessory.HEAD] = _headAddr;
     }
 
+    /**
+        @notice Combine accessories.
+        @param tokenId Base Layer tokenId.
+        @param types List of accessory type.
+        @param accessoryIds Accessory tokenIds.
+     */
     function combine(
         uint256 tokenId,
         Accessory[] calldata types,
@@ -57,6 +74,10 @@ contract BaseLayer is BaseIlluvatar {
         }
     }
 
+    /**
+        @notice Get Metadata of combined item.
+        @param tokenId Base Layer tokenId.
+     */
     function getMetadata(uint256 tokenId)
         external
         view
