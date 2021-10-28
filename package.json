@@ -1,11 +1,8 @@
 {
-  "name": "@paulrberg/solidity-template",
+  "name": "Illuvatars-Contracts",
   "description": "Setup for writing Solidity smart contracts",
   "version": "1.0.0",
-  "author": {
-    "name": "Paul Razvan Berg",
-    "url": "https://paulrberg.com"
-  },
+  "author": "Dmitry Yakovlevich",
   "devDependencies": {
     "@codechecks/client": "^0.1.11",
     "@commitlint/cli": "^13.2.0",

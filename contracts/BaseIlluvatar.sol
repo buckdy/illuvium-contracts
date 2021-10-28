@@ -3,8 +3,9 @@ pragma solidity >=0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "./interfaces/IBaseIlluvatar.sol";
 
-abstract contract BaseIlluvatar is ERC721EnumerableUpgradeable, OwnableUpgradeable {
+abstract contract BaseIlluvatar is ERC721EnumerableUpgradeable, OwnableUpgradeable, IBaseIlluvatar {
     event MinterUpdated(address indexed minter);
 
     // NFT Minter Address.
@@ -35,7 +36,7 @@ abstract contract BaseIlluvatar is ERC721EnumerableUpgradeable, OwnableUpgradeab
         @param to NFT receipient address.
         @param amount Amount of tokens  
      */
-    function mintMultiple(address to, uint256 amount) external {
+    function mintMultiple(address to, uint256 amount) external override {
         require(msg.sender == minter, "Not minter");
 
         for (uint256 i = 0; i < amount; i += 1) {

@@ -3,23 +3,17 @@ pragma solidity >=0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "./BaseIlluvatar.sol";
+import "./interfaces/IAccessoryLayer.sol";
 
 contract BaseLayer is BaseIlluvatar {
-    //Semi-Random Accessory Items
-    enum Accessory {
-        EYE,
-        BODY,
-        MOUTH,
-        HEAD
-    }
     //Metadata for each accessories
     struct Metadata {
         uint8 tier;
-        mapping(Accessory => uint256) accessories;
+        mapping(IAccessoryLayer.Accessory => uint256) accessories;
     }
 
     mapping(uint256 => Metadata) private _metadatas;
-    mapping(Accessory => address) public accessoryIlluvatars;
+    mapping(IAccessoryLayer.Accessory => address) public accessoryIlluvatars;
 
     /**
         @notice Initialize Base Layer.
@@ -41,10 +35,10 @@ contract BaseLayer is BaseIlluvatar {
         address _headAddr
     ) internal initializer {
         __BaseIlluvatar_init(name_, symbol_, _minter);
-        accessoryIlluvatars[Accessory.EYE] = _eyeAddr;
-        accessoryIlluvatars[Accessory.BODY] = _bodyAddr;
-        accessoryIlluvatars[Accessory.MOUTH] = _mouthAddr;
-        accessoryIlluvatars[Accessory.HEAD] = _headAddr;
+        accessoryIlluvatars[IAccessoryLayer.Accessory.EYE] = _eyeAddr;
+        accessoryIlluvatars[IAccessoryLayer.Accessory.BODY] = _bodyAddr;
+        accessoryIlluvatars[IAccessoryLayer.Accessory.MOUTH] = _mouthAddr;
+        accessoryIlluvatars[IAccessoryLayer.Accessory.HEAD] = _headAddr;
     }
 
     /**
@@ -55,7 +49,7 @@ contract BaseLayer is BaseIlluvatar {
      */
     function combine(
         uint256 tokenId,
-        Accessory[] calldata types,
+        IAccessoryLayer.Accessory[] calldata types,
         uint256[] calldata accessoryIds
     ) external {
         require(types.length > 0 && types.length == accessoryIds.length, "Invalid length");
@@ -91,10 +85,10 @@ contract BaseLayer is BaseIlluvatar {
     {
         return (
             _metadatas[tokenId].tier,
-            _metadatas[tokenId].accessories[Accessory.EYE],
-            _metadatas[tokenId].accessories[Accessory.BODY],
-            _metadatas[tokenId].accessories[Accessory.MOUTH],
-            _metadatas[tokenId].accessories[Accessory.HEAD]
+            _metadatas[tokenId].accessories[IAccessoryLayer.Accessory.EYE],
+            _metadatas[tokenId].accessories[IAccessoryLayer.Accessory.BODY],
+            _metadatas[tokenId].accessories[IAccessoryLayer.Accessory.MOUTH],
+            _metadatas[tokenId].accessories[IAccessoryLayer.Accessory.HEAD]
         );
     }
 }
