@@ -5,6 +5,11 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol"
 import "./BaseIlluvatar.sol";
 import "./interfaces/IAccessoryLayer.sol";
 
+/**
+    @title Inherit BaseIlluvatar contract and have function of combination and NFT metadata.
+    @author Dmitry Yakovlevich
+ */
+
 contract BaseLayer is BaseIlluvatar {
     //Metadata for each accessories
     struct Metadata {

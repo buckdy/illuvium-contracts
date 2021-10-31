@@ -3,6 +3,11 @@ pragma solidity >=0.8.4;
 
 import "./BaseIlluvatar.sol";
 
+/**
+    @title Inherit BaseIlluvatar contract. This will be deployed four times for different accessories.
+    @author Dmitry Yakovlevich
+ */
+
 contract AccessoryLayer is BaseIlluvatar {
     /**
         @notice Initialize Accessory NFT.
