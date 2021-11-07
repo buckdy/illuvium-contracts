@@ -59,7 +59,7 @@ contract BaseLayer is BaseIlluvatar {
     ) external {
         require(types.length > 0 && types.length == accessoryIds.length, "Invalid length");
 
-        require(ownerOf(tokenId) == msg.sender, "Not owner");
+        require(ownerOf(tokenId) == msg.sender, "This is not owner");
         Metadata storage metadata = _metadatas[tokenId];
 
         for (uint256 i = 0; i < types.length; i += 1) {
