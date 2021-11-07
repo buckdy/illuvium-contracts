@@ -42,7 +42,7 @@ abstract contract BaseIlluvatar is ERC721EnumerableUpgradeable, OwnableUpgradeab
         @param amount Amount of tokens  
      */
     function mintMultiple(address to, uint256 amount) external override {
-        require(msg.sender == minter, "Not minter");
+        require(msg.sender == minter, "This is not minter");
 
         for (uint256 i = 0; i < amount; i += 1) {
             _mint(to);

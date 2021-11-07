@@ -41,6 +41,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@chainlink/contracts@npm:^0.2.2":
+  version: 0.2.2
+  resolution: "@chainlink/contracts@npm:0.2.2"
+  checksum: 48fedfd6011ef180d2fc8438f75c79e86d42f5d6c461bc4d6e3284450410956366f5b521a2333259edff694e5150bf38675c4614e05ae9d0bc4a3a41e9d1ccd7
+  languageName: node
+  linkType: hard
+
 "@codechecks/client@npm:^0.1.11":
   version: 0.1.11
   resolution: "@codechecks/client@npm:0.1.11"
@@ -1262,61 +1269,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@paulrberg/solidity-template@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "@paulrberg/solidity-template@workspace:."
-  dependencies:
-    "@codechecks/client": ^0.1.11
-    "@commitlint/cli": ^13.2.0
-    "@commitlint/config-conventional": ^13.2.0
-    "@ethersproject/abi": ^5.4.1
-    "@ethersproject/abstract-signer": ^5.4.1
-    "@ethersproject/bignumber": ^5.4.2
-    "@ethersproject/bytes": ^5.4.0
-    "@ethersproject/providers": ^5.4.5
-    "@nomiclabs/hardhat-ethers": ^2.0.2
-    "@nomiclabs/hardhat-waffle": ^2.0.1
-    "@openzeppelin/contracts": ^4.3.2
-    "@openzeppelin/contracts-upgradeable": ^4.3.2
-    "@typechain/ethers-v5": ^7.1.2
-    "@typechain/hardhat": ^2.3.0
-    "@types/chai": ^4.2.22
-    "@types/fs-extra": ^9.0.13
-    "@types/mocha": ^9.0.0
-    "@types/node": ^16.10.2
-    "@typescript-eslint/eslint-plugin": ^4.32.0
-    "@typescript-eslint/parser": ^4.32.0
-    chai: ^4.3.4
-    commitizen: ^4.2.4
-    cross-env: ^7.0.3
-    cz-conventional-changelog: ^3.3.0
-    dotenv: ^10.0.0
-    eslint: ^7.32.0
-    eslint-config-prettier: ^8.3.0
-    ethereum-waffle: ^3.4.0
-    ethers: ^5.4.7
-    fs-extra: ^10.0.0
-    hardhat: ^2.6.4
-    hardhat-gas-reporter: ^1.0.4
-    husky: ^7.0.2
-    lint-staged: ^11.2.0
-    lodash: ^4.17.21
-    mocha: ^9.1.2
-    pinst: ^2.1.6
-    prettier: ^2.4.1
-    prettier-plugin-solidity: ^1.0.0-beta.18
-    shelljs: ^0.8.4
-    shx: ^0.3.3
-    solhint: ^3.3.6
-    solhint-plugin-prettier: ^0.0.5
-    solidity-coverage: ^0.7.17
-    ts-generator: ^0.1.1
-    ts-node: ^10.2.1
-    typechain: ^5.1.2
-    typescript: ^4.4.3
-  languageName: unknown
-  linkType: soft
-
 "@resolver-engine/core@npm:^0.3.3":
   version: 0.3.3
   resolution: "@resolver-engine/core@npm:0.3.3"
@@ -2004,6 +1956,62 @@ __metadata:
   checksum: 05b881b4866a3546861fee756e6d3812776ea47fa6eb7098f983d6d0eefa02e12b66c3fff931574120f196286a7ad4879ce02743c8bb2be36c6a576c7852083a
   languageName: node
   linkType: hard
+
+"Illuvatars-Contracts@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "Illuvatars-Contracts@workspace:."
+  dependencies:
+    "@chainlink/contracts": ^0.2.2
+    "@codechecks/client": ^0.1.11
+    "@commitlint/cli": ^13.2.0
+    "@commitlint/config-conventional": ^13.2.0
+    "@ethersproject/abi": ^5.4.1
+    "@ethersproject/abstract-signer": ^5.4.1
+    "@ethersproject/bignumber": ^5.4.2
+    "@ethersproject/bytes": ^5.4.0
+    "@ethersproject/providers": ^5.4.5
+    "@nomiclabs/hardhat-ethers": ^2.0.2
+    "@nomiclabs/hardhat-waffle": ^2.0.1
+    "@openzeppelin/contracts": ^4.3.2
+    "@openzeppelin/contracts-upgradeable": ^4.3.2
+    "@typechain/ethers-v5": ^7.1.2
+    "@typechain/hardhat": ^2.3.0
+    "@types/chai": ^4.2.22
+    "@types/fs-extra": ^9.0.13
+    "@types/mocha": ^9.0.0
+    "@types/node": ^16.10.2
+    "@typescript-eslint/eslint-plugin": ^4.32.0
+    "@typescript-eslint/parser": ^4.32.0
+    chai: ^4.3.4
+    commitizen: ^4.2.4
+    cross-env: ^7.0.3
+    cz-conventional-changelog: ^3.3.0
+    dotenv: ^10.0.0
+    eslint: ^7.32.0
+    eslint-config-prettier: ^8.3.0
+    ethereum-waffle: ^3.4.0
+    ethers: ^5.4.7
+    fs-extra: ^10.0.0
+    hardhat: ^2.6.4
+    hardhat-gas-reporter: ^1.0.4
+    husky: ^7.0.2
+    lint-staged: ^11.2.0
+    lodash: ^4.17.21
+    mocha: ^9.1.2
+    pinst: ^2.1.6
+    prettier: ^2.4.1
+    prettier-plugin-solidity: ^1.0.0-beta.18
+    shelljs: ^0.8.4
+    shx: ^0.3.3
+    solhint: ^3.3.6
+    solhint-plugin-prettier: ^0.0.5
+    solidity-coverage: ^0.7.17
+    ts-generator: ^0.1.1
+    ts-node: ^10.2.1
+    typechain: ^5.1.2
+    typescript: ^4.4.3
+  languageName: unknown
+  linkType: soft
 
 "JSONStream@npm:^1.0.4":
   version: 1.3.5
