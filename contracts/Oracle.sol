@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity =0.6.6;
+pragma solidity >=0.8.4;
 
 import "./interfaces/IUniswapV2Factory.sol";
 import "./interfaces/IUniswapV2Pair.sol";
@@ -29,7 +29,7 @@ contract Oracle is IOracle {
         address tokenA,
         address tokenB,
         address weth_
-    ) public {
+    ) {
         IUniswapV2Pair _pair = IUniswapV2Pair(UniswapV2Library.pairFor(factory, tokenA, tokenB));
         pair = _pair;
         token0 = _pair.token0();
