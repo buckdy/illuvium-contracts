@@ -6,7 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/IBaseIlluvatar.sol";
 
 /**
-    @title Inherit OZ ERC721 contract and have base functions like mint which can be used in Base Layer and Accessory Contract.
+    @title Inherit OZ ERC721 contract and have base functions which can be used in Base Layer and Accessory Contract.
     @author Dmitry Yakovlevich
  */
 
