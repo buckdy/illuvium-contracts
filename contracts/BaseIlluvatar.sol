@@ -37,6 +37,17 @@ abstract contract BaseIlluvatar is ERC721EnumerableUpgradeable, OwnableUpgradeab
     }
 
     /**
+        @notice Set minter address. 
+        @param minter_ New minter address.
+     */
+    function setMinter(address minter_) external onlyOwner {
+        require(minter_ != address(0), "Minter cannot zero");
+        minter = minter_;
+
+        emit MinterUpdated(minter_);
+    }
+
+    /**
         @notice Mint mulitple NFTs. 
         @param to NFT receipient address.
         @param amount Amount of tokens  
@@ -47,17 +58,6 @@ abstract contract BaseIlluvatar is ERC721EnumerableUpgradeable, OwnableUpgradeab
         for (uint256 i = 0; i < amount; i += 1) {
             _mint(to);
         }
-    }
-
-    /**
-        @notice Set minter address. 
-        @param minter_ New minter address.
-     */
-    function setMinter(address minter_) external onlyOwner {
-        require(minter_ != address(0), "Minter cannot zero");
-        minter = minter_;
-
-        emit MinterUpdated(minter_);
     }
 
     /**

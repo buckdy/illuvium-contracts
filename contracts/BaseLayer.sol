@@ -38,7 +38,7 @@ contract BaseLayer is BaseIlluvatar {
         address _bodyAddr,
         address _mouthAddr,
         address _headAddr
-    ) internal initializer {
+    ) external initializer {
         __BaseIlluvatar_init(name_, symbol_, _minter);
         accessoryIlluvatars[IAccessoryLayer.Accessory.EYE] = _eyeAddr;
         accessoryIlluvatars[IAccessoryLayer.Accessory.BODY] = _bodyAddr;

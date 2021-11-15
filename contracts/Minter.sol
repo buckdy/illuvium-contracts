@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "./interfaces/IAccessoryLayer.sol";
 import "./interfaces/IBaseIlluvatar.sol";
-import "./interfaces/IOracle.sol";
 
 /**
     @title Contract which user interact to mint several base or accessory illuvatar
@@ -200,9 +199,9 @@ contract Minter is VRFConsumerBase, Ownable {
         } else {
             require(oracles[paymentToken] != address(0), "Payment token not supported");
 
-            uint256 tokenAmount = IOracle(oracles[paymentToken]).getTokenAmount(etherPrice);
+            /*            uint256 tokenAmount = IOracle(oracles[paymentToken]).getTokenAmount(etherPrice);
             require(tokenAmount > 0, "Invalid price");
-            IERC20(paymentToken).safeTransferFrom(msg.sender, treasury, tokenAmount);
+            IERC20(paymentToken).safeTransferFrom(msg.sender, treasury, tokenAmount);*/
         }
     }
 }

@@ -20,7 +20,7 @@ contract AccessoryLayer is BaseIlluvatar {
         string memory name_,
         string memory symbol_,
         address _minter
-    ) internal initializer {
+    ) external initializer {
         __BaseIlluvatar_init(name_, symbol_, _minter);
     }
 }
