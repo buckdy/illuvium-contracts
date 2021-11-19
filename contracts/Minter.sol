@@ -143,7 +143,7 @@ contract Minter is VRFConsumerBase, Ownable {
         @notice setFunction for OracleRegistry Address.
         @param oracleRegistry_ OracleRegistry Address.
      */
-    function setAccessoryRandomPrice(address oracleRegistry_) external onlyOwner {
+    function setOracleRegistry(address oracleRegistry_) external onlyOwner {
         oracleRegistry = oracleRegistry_;
     }
 
