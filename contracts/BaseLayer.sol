@@ -2,6 +2,7 @@
 pragma solidity >=0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import "./BaseIlluvatar.sol";
 import "./interfaces/IAccessoryLayer.sol";
 
@@ -10,7 +11,9 @@ import "./interfaces/IAccessoryLayer.sol";
     @author Dmitry Yakovlevich
  */
 
-contract BaseLayer is BaseIlluvatar {
+contract BaseLayer is BaseIlluvatar, ERC721HolderUpgradeable {
+    event Combined(uint256 tokenId, IAccessoryLayer.Accessory[] types, uint256[] accessoryIds);
+
     //Metadata for each accessories
     struct Metadata {
         uint8 tier;
@@ -40,6 +43,7 @@ contract BaseLayer is BaseIlluvatar {
         address _headAddr
     ) external initializer {
         __BaseIlluvatar_init(name_, symbol_, _minter);
+        __ERC721Holder_init();
         accessoryIlluvatars[IAccessoryLayer.Accessory.EYE] = _eyeAddr;
         accessoryIlluvatars[IAccessoryLayer.Accessory.BODY] = _bodyAddr;
         accessoryIlluvatars[IAccessoryLayer.Accessory.MOUTH] = _mouthAddr;
@@ -71,6 +75,7 @@ contract BaseLayer is BaseIlluvatar {
             );
             metadata.accessories[types[i]] = accessoryIds[i];
         }
+        emit Combined(tokenId, types, accessoryIds);
     }
 
     /**
