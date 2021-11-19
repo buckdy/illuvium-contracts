@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "./interfaces/IAccessoryLayer.sol";
 import "./interfaces/IBaseIlluvatar.sol";
+import "./interfaces/IOracle.sol";
+import "./interfaces/IOracleRegistry.sol";
 
 /**
     @title Contract which user interact to mint several base or accessory illuvatar
@@ -45,9 +47,10 @@ contract Minter is VRFConsumerBase, Ownable {
 
     mapping(IAccessoryLayer.Accessory => IBaseIlluvatar) public accessoryIlluvatars;
     IBaseIlluvatar public immutable baseLayerIlluvatar;
-    mapping(address => address) public oracles;
-    address public treasury;
 
+    address public treasury;
+    address public weth;
+    address public oracleRegistry;
     bytes32 public vrfKeyHash;
     uint256 public vrfFee;
 
@@ -63,7 +66,8 @@ contract Minter is VRFConsumerBase, Ownable {
         @param _mouthAddr Mouth accessory item.
         @param _headAddr Head accessory item.
         @param _treasury Treasury Address.
-        @param _accessoryRandomPrice RandomAccesory Price.
+        @param _weth WETH Address.
+        @param _oracleRegistry IlluviumOracleRegistry Address.
      */
     constructor(
         address _vrfCoordinator,
@@ -76,7 +80,8 @@ contract Minter is VRFConsumerBase, Ownable {
         IBaseIlluvatar _mouthAddr,
         IBaseIlluvatar _headAddr,
         address _treasury,
-        uint256 _accessoryRandomPrice
+        address _weth,
+        address _oracleRegistry
     ) VRFConsumerBase(_vrfCoordinator, _linkToken) {
         require(address(_baseLayerAddr) != address(0), "cannot zero address");
         require(address(_eyeAddr) != address(0), "cannot zero address");
@@ -94,7 +99,8 @@ contract Minter is VRFConsumerBase, Ownable {
         accessoryIlluvatars[IAccessoryLayer.Accessory.HEAD] = _headAddr;
 
         treasury = _treasury;
-        accessoryRandomPrice = _accessoryRandomPrice;
+        weth = _weth;
+        oracleRegistry = _oracleRegistry;
     }
 
     /**
@@ -131,6 +137,14 @@ contract Minter is VRFConsumerBase, Ownable {
      */
     function setAccessoryRandomPrice(uint256 accessoryRandomPrice_) external onlyOwner {
         accessoryRandomPrice = accessoryRandomPrice_;
+    }
+
+    /**
+        @notice setFunction for OracleRegistry Address.
+        @param oracleRegistry_ OracleRegistry Address.
+     */
+    function setAccessoryRandomPrice(address oracleRegistry_) external onlyOwner {
+        oracleRegistry = oracleRegistry_;
     }
 
     /**
@@ -197,11 +211,11 @@ contract Minter is VRFConsumerBase, Ownable {
             (bool success, ) = treasury.call{ value: etherPrice }("");
             require(success, "transfer ether failed");
         } else {
-            require(oracles[paymentToken] != address(0), "Payment token not supported");
-
-            /*            uint256 tokenAmount = IOracle(oracles[paymentToken]).getTokenAmount(etherPrice);
+            IOracle oracle = IOracle(IOracleRegistry(oracleRegistry).getOracle(weth, paymentToken));
+            oracle.update();
+            uint256 tokenAmount = oracle.consult(weth, etherPrice);
             require(tokenAmount > 0, "Invalid price");
-            IERC20(paymentToken).safeTransferFrom(msg.sender, treasury, tokenAmount);*/
+            IERC20(paymentToken).safeTransferFrom(msg.sender, treasury, tokenAmount);
         }
     }
 }
