@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4;
 
-import "./BaseIlluvatar.sol";
+import "./BaseIlluvitar.sol";
 
 /**
-    @title Inherit BaseIlluvatar contract. This will be deployed four times for different accessories.
+    @title Inherit BaseIlluvitar contract. This will be deployed four times for different accessories.
     @author Dmitry Yakovlevich
  */
 
-contract AccessoryLayer is BaseIlluvatar {
+contract AccessoryLayer is BaseIlluvitar {
     /**
         @notice Initialize Accessory NFT.
         @param name_ NFT Name.
@@ -21,6 +21,6 @@ contract AccessoryLayer is BaseIlluvatar {
         string memory symbol_,
         address _minter
     ) external initializer {
-        __BaseIlluvatar_init(name_, symbol_, _minter);
+        __BaseIlluvitar_init(name_, symbol_, _minter);
     }
 }

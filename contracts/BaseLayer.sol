@@ -3,15 +3,15 @@ pragma solidity >=0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
-import "./BaseIlluvatar.sol";
+import "./BaseIlluvitar.sol";
 import "./interfaces/IAccessoryLayer.sol";
 
 /**
-    @title Inherit BaseIlluvatar contract and have function of combination and NFT metadata.
+    @title Inherit BaseIlluvitar contract and have function of combination and NFT metadata.
     @author Dmitry Yakovlevich
  */
 
-contract BaseLayer is BaseIlluvatar, ERC721HolderUpgradeable {
+contract BaseLayer is BaseIlluvitar, ERC721HolderUpgradeable {
     event Combined(uint256 tokenId, IAccessoryLayer.Accessory[] types, uint256[] accessoryIds);
 
     //Metadata for each accessories
@@ -21,7 +21,7 @@ contract BaseLayer is BaseIlluvatar, ERC721HolderUpgradeable {
     }
 
     mapping(uint256 => Metadata) private _metadatas;
-    mapping(IAccessoryLayer.Accessory => address) public accessoryIlluvatars;
+    mapping(IAccessoryLayer.Accessory => address) public accessoryIlluvitars;
 
     /**
         @notice Initialize Base Layer.
@@ -42,12 +42,12 @@ contract BaseLayer is BaseIlluvatar, ERC721HolderUpgradeable {
         address _mouthAddr,
         address _headAddr
     ) external initializer {
-        __BaseIlluvatar_init(name_, symbol_, _minter);
+        __BaseIlluvitar_init(name_, symbol_, _minter);
         __ERC721Holder_init();
-        accessoryIlluvatars[IAccessoryLayer.Accessory.EYE] = _eyeAddr;
-        accessoryIlluvatars[IAccessoryLayer.Accessory.BODY] = _bodyAddr;
-        accessoryIlluvatars[IAccessoryLayer.Accessory.MOUTH] = _mouthAddr;
-        accessoryIlluvatars[IAccessoryLayer.Accessory.HEAD] = _headAddr;
+        accessoryIlluvitars[IAccessoryLayer.Accessory.EYE] = _eyeAddr;
+        accessoryIlluvitars[IAccessoryLayer.Accessory.BODY] = _bodyAddr;
+        accessoryIlluvitars[IAccessoryLayer.Accessory.MOUTH] = _mouthAddr;
+        accessoryIlluvitars[IAccessoryLayer.Accessory.HEAD] = _headAddr;
     }
 
     /**
@@ -68,7 +68,7 @@ contract BaseLayer is BaseIlluvatar, ERC721HolderUpgradeable {
 
         for (uint256 i = 0; i < types.length; i += 1) {
             require(metadata.accessories[types[i]] == 0, "Already combined");
-            IERC721Upgradeable(accessoryIlluvatars[types[i]]).safeTransferFrom(
+            IERC721Upgradeable(accessoryIlluvitars[types[i]]).safeTransferFrom(
                 msg.sender,
                 address(this),
                 accessoryIds[i]

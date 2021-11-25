@@ -64,19 +64,19 @@ describe("BaseLayer", () => {
     });
 
     it("check eye accessory", async () => {
-      expect(await baseLayer.accessoryIlluvatars(Accessory.EYE)).to.equal(eyeAccessory.address);
+      expect(await baseLayer.accessoryIlluvitars(Accessory.EYE)).to.equal(eyeAccessory.address);
     });
 
     it("check body accessory", async () => {
-      expect(await baseLayer.accessoryIlluvatars(Accessory.BODY)).to.equal(bodyAccessory.address);
+      expect(await baseLayer.accessoryIlluvitars(Accessory.BODY)).to.equal(bodyAccessory.address);
     });
 
     it("check mouth accessory", async () => {
-      expect(await baseLayer.accessoryIlluvatars(Accessory.MOUTH)).to.equal(mouth);
+      expect(await baseLayer.accessoryIlluvitars(Accessory.MOUTH)).to.equal(mouth);
     });
 
     it("check head accessory", async () => {
-      expect(await baseLayer.accessoryIlluvatars(Accessory.HEAD)).to.equal(head);
+      expect(await baseLayer.accessoryIlluvitars(Accessory.HEAD)).to.equal(head);
     });
   });
 

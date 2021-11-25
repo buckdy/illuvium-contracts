@@ -6,12 +6,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "./interfaces/IAccessoryLayer.sol";
-import "./interfaces/IBaseIlluvatar.sol";
+import "./interfaces/IBaseIlluvitar.sol";
 import "./interfaces/IOracle.sol";
 import "./interfaces/IOracleRegistry.sol";
 
 /**
-    @title Contract which user interact to mint several base or accessory illuvatar
+    @title Contract which user interact to mint several base or accessory illuvitar
     @author Dmitry Yakovlevich
  */
 
@@ -45,8 +45,8 @@ contract Minter is VRFConsumerBase, Ownable {
     mapping(bytes32 => RandomAccessoryMintParams) public randomAccessoryRequester;
     uint256 public accessoryRandomPrice;
 
-    mapping(IAccessoryLayer.Accessory => IBaseIlluvatar) public accessoryIlluvatars;
-    IBaseIlluvatar public immutable baseLayerIlluvatar;
+    mapping(IAccessoryLayer.Accessory => IBaseIlluvitar) public accessoryIlluvitars;
+    IBaseIlluvitar public immutable baseLayerIlluvitar;
 
     address public treasury;
     address public weth;
@@ -74,11 +74,11 @@ contract Minter is VRFConsumerBase, Ownable {
         address _linkToken,
         bytes32 _vrfKeyhash,
         uint256 _vrfFee,
-        IBaseIlluvatar _baseLayerAddr,
-        IBaseIlluvatar _eyeAddr,
-        IBaseIlluvatar _bodyAddr,
-        IBaseIlluvatar _mouthAddr,
-        IBaseIlluvatar _headAddr,
+        IBaseIlluvitar _baseLayerAddr,
+        IBaseIlluvitar _eyeAddr,
+        IBaseIlluvitar _bodyAddr,
+        IBaseIlluvitar _mouthAddr,
+        IBaseIlluvitar _headAddr,
         address _treasury,
         address _weth,
         address _oracleRegistry
@@ -92,11 +92,11 @@ contract Minter is VRFConsumerBase, Ownable {
 
         vrfKeyHash = _vrfKeyhash;
         vrfFee = _vrfFee;
-        baseLayerIlluvatar = _baseLayerAddr;
-        accessoryIlluvatars[IAccessoryLayer.Accessory.EYE] = _eyeAddr;
-        accessoryIlluvatars[IAccessoryLayer.Accessory.BODY] = _bodyAddr;
-        accessoryIlluvatars[IAccessoryLayer.Accessory.MOUTH] = _mouthAddr;
-        accessoryIlluvatars[IAccessoryLayer.Accessory.HEAD] = _headAddr;
+        baseLayerIlluvitar = _baseLayerAddr;
+        accessoryIlluvitars[IAccessoryLayer.Accessory.EYE] = _eyeAddr;
+        accessoryIlluvitars[IAccessoryLayer.Accessory.BODY] = _bodyAddr;
+        accessoryIlluvitars[IAccessoryLayer.Accessory.MOUTH] = _mouthAddr;
+        accessoryIlluvitars[IAccessoryLayer.Accessory.HEAD] = _headAddr;
 
         treasury = _treasury;
         weth = _weth;
@@ -159,7 +159,7 @@ contract Minter is VRFConsumerBase, Ownable {
         for (uint256 i = 0; i < mintParams.amount; i += 1) {
             uint8 typeId = uint8(randomNumber % 4);
             randomNumber /= 4;
-            accessoryIlluvatars[IAccessoryLayer.Accessory(typeId)].mintMultiple(mintParams.requester, 1);
+            accessoryIlluvitars[IAccessoryLayer.Accessory(typeId)].mintMultiple(mintParams.requester, 1);
         }
 
         delete randomAccessoryRequester[requestId];
@@ -183,13 +183,13 @@ contract Minter is VRFConsumerBase, Ownable {
         uint256 baseLayerParamLength = baseLayerMintParams.length;
         for (uint256 i = 0; i < baseLayerParamLength; i += 1) {
             etherPrice += uint256(baseLayerMintParams[i].amount) * baseLayerPricePerTier[baseLayerMintParams[i].tier];
-            baseLayerIlluvatar.mintMultiple(msg.sender, uint256(baseLayerMintParams[i].amount));
+            baseLayerIlluvitar.mintMultiple(msg.sender, uint256(baseLayerMintParams[i].amount));
         }
 
         uint256 accessoryParamLength = accessoryMintParams.length;
         for (uint256 i = 0; i < accessoryParamLength; i += 1) {
             etherPrice += uint256(accessoryMintParams[i].amount) * accessoryPrice[accessoryMintParams[i].accessoryType];
-            accessoryIlluvatars[accessoryMintParams[i].accessoryType].mintMultiple(
+            accessoryIlluvitars[accessoryMintParams[i].accessoryType].mintMultiple(
                 msg.sender,
                 uint256(accessoryMintParams[i].amount)
             );

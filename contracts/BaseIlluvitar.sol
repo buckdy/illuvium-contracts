@@ -3,14 +3,14 @@ pragma solidity >=0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "./interfaces/IBaseIlluvatar.sol";
+import "./interfaces/IBaseIlluvitar.sol";
 
 /**
     @title Inherit OZ ERC721 contract and have base functions which can be used in Base Layer and Accessory Contract.
     @author Dmitry Yakovlevich
  */
 
-abstract contract BaseIlluvatar is ERC721EnumerableUpgradeable, OwnableUpgradeable, IBaseIlluvatar {
+abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeable, IBaseIlluvitar {
     event MinterUpdated(address indexed minter);
 
     // NFT Minter Address.
@@ -19,12 +19,12 @@ abstract contract BaseIlluvatar is ERC721EnumerableUpgradeable, OwnableUpgradeab
     uint256 public lastTokenId;
 
     /**
-        @notice Initialize Base Illuvatar.
+        @notice Initialize Base Illuvitar.
         @param name_ NFT Name.
         @param symbol_ NFT Symbol.
         @param _minter NFT Minter Address.
      */
-    function __BaseIlluvatar_init(
+    function __BaseIlluvitar_init(
         string memory name_,
         string memory symbol_,
         address _minter
