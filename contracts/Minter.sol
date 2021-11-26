@@ -39,7 +39,7 @@ contract Minter is VRFConsumerBase, Ownable {
         uint64 amount;
     }
 
-    address private constant ETHER_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+    address private constant ETHER_ADDRESS = address(0x0000000000000000000000000000000000000000);
     mapping(uint8 => uint256) public baseLayerPricePerTier;
     mapping(IAccessoryLayer.Accessory => uint256) public accessoryPrice;
     mapping(bytes32 => RandomAccessoryMintParams) public randomAccessoryRequester;
@@ -208,6 +208,7 @@ contract Minter is VRFConsumerBase, Ownable {
 
         if (paymentToken == ETHER_ADDRESS) {
             require(msg.value == etherPrice, "Invalid price");
+            // solhint-disable-next-line avoid-low-level-calls
             (bool success, ) = treasury.call{ value: etherPrice }("");
             require(success, "transfer ether failed");
         } else {
