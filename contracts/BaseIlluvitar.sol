@@ -64,7 +64,7 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
         @notice Safely mint.
         @param to NFT receipient address.
      */
-    function _mint(address to) internal {
+    function _mint(address to) private {
         lastTokenId += 1;
         _safeMint(to, lastTokenId);
     }

@@ -208,9 +208,7 @@ contract Minter is VRFConsumerBase, Ownable {
 
         if (paymentToken == ETHER_ADDRESS) {
             require(msg.value == etherPrice, "Invalid price");
-            // solhint-disable-next-line avoid-low-level-calls
-            (bool success, ) = treasury.call{ value: etherPrice }("");
-            require(success, "transfer ether failed");
+            payable(treasury).transfer(etherPrice);
         } else {
             IOracle oracle = IOracle(IOracleRegistry(oracleRegistry).getOracle(weth, paymentToken));
             oracle.update();
@@ -218,5 +216,20 @@ contract Minter is VRFConsumerBase, Ownable {
             require(tokenAmount > 0, "Invalid price");
             IERC20(paymentToken).safeTransferFrom(msg.sender, treasury, tokenAmount);
         }
+    }
+
+    function requestRandomAgain(bytes32 requestId) external onlyOwner {
+        RandomAccessoryMintParams memory oldMintParams = randomAccessoryRequester[requestId];
+        require(oldMintParams.amount > 0 && oldMintParams.requester != address(0), "Invalid requestId");
+
+        bytes32 newRequestId = requestRandomness(vrfKeyHash, vrfFee);
+
+        RandomAccessoryMintParams storage newMintParams = randomAccessoryRequester[newRequestId];
+        newMintParams.requester = oldMintParams.requester;
+        newMintParams.amount = oldMintParams.amount;
+
+        emit RandomAccessoryRequested(newMintParams.requester, newRequestId);
+
+        delete randomAccessoryRequester[requestId];
     }
 }
