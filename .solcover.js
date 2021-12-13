@@ -1,3 +1,4 @@
 module.exports = {
-  skipFiles: ["mock", "test", "AccessoryLayer", "BaseLayer", "Minter"],
+  skipFiles: ["mock", "test"],
+  configureYulOptimizer: true,
 };

@@ -8,7 +8,7 @@ interface IBaseIlluvitar {
      * @param to NFT receipient address
      * @param amount amount of tokens
      *
-     * @dev This function is part of the BaseIlluvitar flow
+     * @dev This function is main of the BaseIlluvitar flow
      */
     function mintMultiple(address to, uint256 amount) external;
 }
