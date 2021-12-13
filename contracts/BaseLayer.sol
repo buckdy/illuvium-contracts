@@ -7,31 +7,41 @@ import "./BaseIlluvitar.sol";
 import "./interfaces/IAccessoryLayer.sol";
 
 /**
-    @title Inherit BaseIlluvitar contract and have function of combination and NFT metadata.
+    @title BaseLayer, this contract is inherited BaseIlluvitar contract,
+    this contract contains the function of combination and NFT metadata.
     @author Dmitry Yakovlevich
  */
 
 contract BaseLayer is BaseIlluvitar, ERC721HolderUpgradeable {
+    /**
+     * @notice event emitted when list of accessory pairs (tokenId, type) are combined to the base layer.
+     * @dev emitted in {combine} function.
+     * @param tokenId base layer token id.
+     * @param types list of accessory types.
+     * @param accessoryIds list of tokenIds for each type of accessory.
+     */
     event Combined(uint256 tokenId, IAccessoryLayer.Accessory[] types, uint256[] accessoryIds);
 
-    //Metadata for each accessories
+    // Metadata for each accessories
     struct Metadata {
         uint8 tier;
         mapping(IAccessoryLayer.Accessory => uint256) accessories;
     }
 
+    // Metadata mapping
     mapping(uint256 => Metadata) private _metadatas;
+    // illuvitar accessory address mapping
     mapping(IAccessoryLayer.Accessory => address) public accessoryIlluvitars;
 
     /**
-        @notice Initialize Base Layer.
-        @param name_ NFT Name.
-        @param symbol_ NFT Symbol.
-        @param _minter NFT Minter Address.
-        @param _eyeAddr Eye accessory address.
-        @param _bodyAddr Body accessory address.
-        @param _mouthAddr Mouth accessory address.
-        @param _headAddr Head accessory address.
+     * @notice Initialize Base Layer.
+     * @param name_ NFT Name.
+     * @param symbol_ NFT Symbol.
+     * @param _minter NFT Minter Address.
+     * @param _eyeAddr Eye accessory address.
+     * @param _bodyAddr Body accessory address.
+     * @param _mouthAddr Mouth accessory address.
+     * @param _headAddr Head accessory address.
      */
     function initialize(
         string memory name_,
@@ -51,10 +61,10 @@ contract BaseLayer is BaseIlluvitar, ERC721HolderUpgradeable {
     }
 
     /**
-        @notice Combine accessories.
-        @param tokenId Base Layer tokenId.
-        @param types List of accessory type.
-        @param accessoryIds Accessory tokenIds.
+     * @notice Combine list of accessory pairs (tokenId, type) onto tokenId of base layer.
+     * @param tokenId Base Layer tokenId.
+     * @param types List of accessory type.
+     * @param accessoryIds Accessory tokenIds.
      */
     function combine(
         uint256 tokenId,
@@ -79,8 +89,9 @@ contract BaseLayer is BaseIlluvitar, ERC721HolderUpgradeable {
     }
 
     /**
-        @notice Get Metadata of combined item.
-        @param tokenId Base Layer tokenId.
+     * @notice Get Metadata of combined item.
+     * @param tokenId Base Layer tokenId.
+     * @return tier and all the accessories (EYE, BODY, MOUTH, HEAD)
      */
     function getMetadata(uint256 tokenId)
         external

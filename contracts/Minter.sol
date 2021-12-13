@@ -11,14 +11,20 @@ import "./interfaces/IOracle.sol";
 import "./interfaces/IOracleRegistry.sol";
 
 /**
-    @title Contract which user interact to mint several base or accessory illuvitar
+    @title Minter, this contract is inherited from chainlink VRFConsumerBase,
+    this contract contains purchase function which users interact to mint several base or accessory illuvitars.
     @author Dmitry Yakovlevich
  */
 
 contract Minter is VRFConsumerBase, Ownable {
     using SafeERC20 for IERC20;
 
-    //Event for RandomAccessory request
+    /**
+     * @notice event emitted random accessory requested.
+     * @dev emitted in {purchase} or {requestRandomAgain} function.
+     * @param requester requester address.
+     * @param requestId requestId number.
+     */
     event RandomAccessoryRequested(address indexed requester, bytes32 requestId);
 
     //Purchase Body struct
@@ -55,19 +61,19 @@ contract Minter is VRFConsumerBase, Ownable {
     uint256 public vrfFee;
 
     /**
-        @notice Constructor.
-        @param _vrfCoordinator Chainlink VRF Coordinator address.
-        @param _linkToken LINK token address.
-        @param _vrfKeyhash Key Hash.
-        @param _vrfFee Fee.
-        @param _baseLayerAddr Body accessory item.
-        @param _eyeAddr Mouth accessory item.
-        @param _bodyAddr Body accessory item.
-        @param _mouthAddr Mouth accessory item.
-        @param _headAddr Head accessory item.
-        @param _treasury Treasury Address.
-        @param _weth WETH Address.
-        @param _oracleRegistry IlluviumOracleRegistry Address.
+     * @notice Constructor.
+     * @param _vrfCoordinator Chainlink VRF Coordinator address.
+     * @param _linkToken LINK token address.
+     * @param _vrfKeyhash Key Hash.
+     * @param _vrfFee Fee.
+     * @param _baseLayerAddr Body accessory item.
+     * @param _eyeAddr Mouth accessory item.
+     * @param _bodyAddr Body accessory item.
+     * @param _mouthAddr Mouth accessory item.
+     * @param _headAddr Head accessory item.
+     * @param _treasury Treasury Address.
+     * @param _weth WETH Address.
+     * @param _oracleRegistry IlluviumOracleRegistry Address.
      */
     constructor(
         address _vrfCoordinator,
@@ -104,8 +110,9 @@ contract Minter is VRFConsumerBase, Ownable {
     }
 
     /**
-        @notice setFunction for Treasury Address.
-        @param treasury_ Treasury Address.
+     * @notice setFunction for Treasury Address.
+     * @dev only owner can call this function.
+     * @param treasury_ Treasury Address.
      */
     function setTreasury(address treasury_) external onlyOwner {
         require(treasury_ != address(0), "Treasury address cannot zero");
@@ -113,9 +120,10 @@ contract Minter is VRFConsumerBase, Ownable {
     }
 
     /**
-        @notice setFunction for Body Accessory Price.
-        @param tier_ 6 tiers item.
-        @param tierPrice_ 6 tiers price.
+     * @notice setFunction for Body Accessory Price.
+     * @dev only owner can call this function.
+     * @param tier_ 6 tiers item.
+     * @param tierPrice_ 6 tiers price.
      */
     function setBaseLayerPricePerTier(uint8 tier_, uint256 tierPrice_) external onlyOwner {
         require(tier_ < 6, "only exist 6 tiers");
@@ -123,34 +131,38 @@ contract Minter is VRFConsumerBase, Ownable {
     }
 
     /**
-        @notice setFunction for 4 Accessories (Eye, Head, Mouth, Body) Price.
-        @param accessory_ 4 accessories item.
-        @param accessoryPrice_ 4 accessories price.
+     * @notice setFunction for 4 Accessories (Eye, Head, Mouth, Body) Price.
+     * @dev only owner can call this function.
+     * @param accessory_ 4 accessories item.
+     * @param accessoryPrice_ 4 accessories price.
      */
     function setAccessoryPrice(IAccessoryLayer.Accessory accessory_, uint256 accessoryPrice_) external onlyOwner {
         accessoryPrice[accessory_] = accessoryPrice_;
     }
 
     /**
-        @notice setFunction for Random Accessory Price.
-        @param accessoryRandomPrice_ Random accessory price.
+     * @notice setFunction for Random Accessory Price.
+     * @dev only owner can call this function.
+     * @param accessoryRandomPrice_ Random accessory price.
      */
     function setAccessoryRandomPrice(uint256 accessoryRandomPrice_) external onlyOwner {
         accessoryRandomPrice = accessoryRandomPrice_;
     }
 
     /**
-        @notice setFunction for OracleRegistry Address.
-        @param oracleRegistry_ OracleRegistry Address.
+     * @notice setFunction for OracleRegistry Address.
+     * @dev only owner can call this function.
+     * @param oracleRegistry_ OracleRegistry Address.
      */
     function setOracleRegistry(address oracleRegistry_) external onlyOwner {
         oracleRegistry = oracleRegistry_;
     }
 
     /**
-        @notice Mint for random accessory.
-        @param requestId requested random accesory Id.
-        @param randomNumber Random Number.
+     * @notice Mint for random accessory, callback for VRFConsumerBase
+     * @dev inaccessible from outside
+     * @param requestId requested random accesory Id.
+     * @param randomNumber Random Number.
      */
     function fulfillRandomness(bytes32 requestId, uint256 randomNumber) internal override {
         RandomAccessoryMintParams memory mintParams = randomAccessoryRequester[requestId];
@@ -166,11 +178,11 @@ contract Minter is VRFConsumerBase, Ownable {
     }
 
     /**
-        @notice Mint for Base and Accesory items. Users will send ETH or sILV to mint itmes
-        @param baseLayerMintParams requested baselayer items.
-        @param accessoryMintParams requested accessorylayer items.
-        @param accessoryRandomAmount requested amount for random accessories.
-        @param paymentToken payment token address.
+     * @notice Mint for Base and Accesory items. Users will send ETH or sILV to mint itmes
+     * @param baseLayerMintParams requested baselayer items.
+     * @param accessoryMintParams requested accessorylayer items.
+     * @param accessoryRandomAmount requested amount for random accessories.
+     * @param paymentToken payment token address.
      */
     function purchase(
         BaseLayerMintParams[] calldata baseLayerMintParams,
@@ -218,6 +230,11 @@ contract Minter is VRFConsumerBase, Ownable {
         }
     }
 
+    /**
+     * @notice Request random number again if failed.
+     * @dev only owner can call this function.
+     * @param requestId request id number.
+     */
     function requestRandomAgain(bytes32 requestId) external onlyOwner {
         RandomAccessoryMintParams memory oldMintParams = randomAccessoryRequester[requestId];
         require(oldMintParams.amount > 0 && oldMintParams.requester != address(0), "Invalid requestId");

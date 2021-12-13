@@ -6,11 +6,18 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/IBaseIlluvitar.sol";
 
 /**
-    @title Inherit OZ ERC721 contract and have base functions which can be used in Base Layer and Accessory Contract.
+    @title BaseIlluvitar, this contract is inherited from OZ ERC721 contract,
+    this contains base functions which can be used in Base Layer and Accessory Contract.
+    @dev abstract contract!
     @author Dmitry Yakovlevich
  */
 
 abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeable, IBaseIlluvitar {
+    /**
+     * @notice event emitted when new minter is set.
+     * @dev emitted in {setMinter} function.
+     * @param minter new minter address.
+     */
     event MinterUpdated(address indexed minter);
 
     // NFT Minter Address.
@@ -19,10 +26,10 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
     uint256 public lastTokenId;
 
     /**
-        @notice Initialize Base Illuvitar.
-        @param name_ NFT Name.
-        @param symbol_ NFT Symbol.
-        @param _minter NFT Minter Address.
+     * @notice Initialize Base Illuvitar.
+     * @param name_ NFT Name.
+     * @param symbol_ NFT Symbol.
+     * @param _minter NFT Minter Address.
      */
     function __BaseIlluvitar_init(
         string memory name_,
@@ -37,8 +44,9 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
     }
 
     /**
-        @notice Set minter address. 
-        @param minter_ New minter address.
+     * @notice Set minter address.
+     * @dev only owner can call this function.
+     * @param minter_ New minter address.
      */
     function setMinter(address minter_) external onlyOwner {
         require(minter_ != address(0), "Minter cannot zero");
@@ -48,9 +56,10 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
     }
 
     /**
-        @notice Mint mulitple NFTs. 
-        @param to NFT receipient address.
-        @param amount Amount of tokens  
+     * @notice Mint mulitple NFTs.
+     * @dev set proper amount value to avoid gas overflow.
+     * @param to NFT receipient address.
+     * @param amount Amount of tokens.
      */
     function mintMultiple(address to, uint256 amount) external override {
         require(msg.sender == minter, "This is not minter");
@@ -61,8 +70,9 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
     }
 
     /**
-        @notice Safely mint.
-        @param to NFT receipient address.
+     * @notice Safely mint.
+     * @dev inaccessible from outside.
+     * @param to NFT receipient address.
      */
     function _mint(address to) private {
         lastTokenId += 1;
