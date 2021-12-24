@@ -7,12 +7,12 @@ import "./BaseIlluvitar.sol";
 import "./interfaces/IAccessoryLayer.sol";
 
 /**
-    @title BaseLayer, this contract is inherited BaseIlluvitar contract,
+    @title PortraitLayer, this contract is inherited BaseIlluvitar contract,
     this contract contains the function of combination and NFT metadata.
     @author Dmitry Yakovlevich
  */
 
-contract BaseLayer is BaseIlluvitar, ERC721HolderUpgradeable {
+contract PortraitLayer is BaseIlluvitar, ERC721HolderUpgradeable {
     /**
      * @notice event emitted when list of accessory pairs (tokenId, type) are combined to the base layer.
      * @dev emitted in {combine} function.
@@ -20,44 +20,42 @@ contract BaseLayer is BaseIlluvitar, ERC721HolderUpgradeable {
      * @param types list of accessory types.
      * @param accessoryIds list of tokenIds for each type of accessory.
      */
-    event Combined(uint256 tokenId, IAccessoryLayer.Accessory[] types, uint256[] accessoryIds);
+    event Combined(uint256 tokenId, IAccessoryLayer.AccessoryType[] types, uint256[] accessoryIds);
 
     // Metadata for each accessories
     struct Metadata {
         uint8 tier;
-        mapping(IAccessoryLayer.Accessory => uint256) accessories;
+        mapping(IAccessoryLayer.AccessoryType => uint256) accessories;
     }
 
     // Metadata mapping
     mapping(uint256 => Metadata) private _metadatas;
     // illuvitar accessory address mapping
-    mapping(IAccessoryLayer.Accessory => address) public accessoryIlluvitars;
+    mapping(IAccessoryLayer.AccessoryType => address) public accessoryIlluvitars;
 
     /**
      * @notice Initialize Base Layer.
      * @param name_ NFT Name.
      * @param symbol_ NFT Symbol.
      * @param _minter NFT Minter Address.
-     * @param _eyeAddr Eye accessory address.
-     * @param _bodyAddr Body accessory address.
-     * @param _mouthAddr Mouth accessory address.
-     * @param _headAddr Head accessory address.
+     * @param _accessories List of accessory items.
      */
     function initialize(
         string memory name_,
         string memory symbol_,
         address _minter,
-        address _eyeAddr,
-        address _bodyAddr,
-        address _mouthAddr,
-        address _headAddr
+        address[] calldata _accessories
     ) external initializer {
         __BaseIlluvitar_init(name_, symbol_, _minter);
         __ERC721Holder_init();
-        accessoryIlluvitars[IAccessoryLayer.Accessory.EYE] = _eyeAddr;
-        accessoryIlluvitars[IAccessoryLayer.Accessory.BODY] = _bodyAddr;
-        accessoryIlluvitars[IAccessoryLayer.Accessory.MOUTH] = _mouthAddr;
-        accessoryIlluvitars[IAccessoryLayer.Accessory.HEAD] = _headAddr;
+
+        uint256 accessoryTypeCounts = 5;
+        require(_accessories.length == accessoryTypeCounts, "invalid length");
+        for (uint256 i = 0; i < accessoryTypeCounts; i += 1) {
+            IAccessoryLayer.AccessoryType type_ = IAccessoryLayer(_accessories[i]).layerType();
+            require(address(accessoryIlluvitars[type_]) == address(0), "already set");
+            accessoryIlluvitars[type_] = _accessories[i];
+        }
     }
 
     /**
@@ -68,7 +66,7 @@ contract BaseLayer is BaseIlluvitar, ERC721HolderUpgradeable {
      */
     function combine(
         uint256 tokenId,
-        IAccessoryLayer.Accessory[] calldata types,
+        IAccessoryLayer.AccessoryType[] calldata types,
         uint256[] calldata accessoryIds
     ) external {
         require(types.length > 0 && types.length == accessoryIds.length, "Invalid length");
@@ -101,15 +99,17 @@ contract BaseLayer is BaseIlluvitar, ERC721HolderUpgradeable {
             uint256,
             uint256,
             uint256,
+            uint256,
             uint256
         )
     {
         return (
             _metadatas[tokenId].tier,
-            _metadatas[tokenId].accessories[IAccessoryLayer.Accessory.EYE],
-            _metadatas[tokenId].accessories[IAccessoryLayer.Accessory.BODY],
-            _metadatas[tokenId].accessories[IAccessoryLayer.Accessory.MOUTH],
-            _metadatas[tokenId].accessories[IAccessoryLayer.Accessory.HEAD]
+            _metadatas[tokenId].accessories[IAccessoryLayer.AccessoryType.Skin],
+            _metadatas[tokenId].accessories[IAccessoryLayer.AccessoryType.Body],
+            _metadatas[tokenId].accessories[IAccessoryLayer.AccessoryType.EyeWear],
+            _metadatas[tokenId].accessories[IAccessoryLayer.AccessoryType.HeadWear],
+            _metadatas[tokenId].accessories[IAccessoryLayer.AccessoryType.Props]
         );
     }
 }

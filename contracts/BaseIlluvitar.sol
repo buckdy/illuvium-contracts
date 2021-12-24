@@ -20,10 +20,13 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
      */
     event MinterUpdated(address indexed minter);
 
+    uint256 internal constant DECIMALS = 100;
+
     // NFT Minter Address.
     address public minter;
     // LastToken ID that already minted.
     uint256 public lastTokenId;
+    mapping(uint256 => BoxType) public boxTypes;
 
     /**
      * @notice Initialize Base Illuvitar.
@@ -61,11 +64,15 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
      * @param to NFT receipient address.
      * @param amount Amount of tokens.
      */
-    function mintMultiple(address to, uint256 amount) external override {
+    function mintMultiple(
+        address to,
+        uint256 amount,
+        BoxType[] calldata _boxTypes
+    ) external override {
         require(msg.sender == minter, "This is not minter");
 
         for (uint256 i = 0; i < amount; i += 1) {
-            _mint(to);
+            _mint(to, _boxTypes[i]);
         }
     }
 
@@ -74,8 +81,9 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
      * @dev inaccessible from outside.
      * @param to NFT receipient address.
      */
-    function _mint(address to) private {
+    function _mint(address to, BoxType boxType) private {
         lastTokenId += 1;
         _safeMint(to, lastTokenId);
+        boxTypes[lastTokenId] = boxType;
     }
 }
