@@ -11,7 +11,7 @@ enum Accessory {
 
 const generateRandomAddress = () => Wallet.createRandom().address;
 
-describe("BaseLayer", () => {
+describe("PortraitLayer", () => {
   let accounts: Signer[];
   let baseLayer: Contract;
   let eyeAccessory: Contract;
@@ -29,7 +29,7 @@ describe("BaseLayer", () => {
     accounts = await ethers.getSigners();
     [owner, alice, minter] = accounts;
     const AccessoryLayerFactory = await ethers.getContractFactory("AccessoryLayer");
-    const BaseLayerFactory = await ethers.getContractFactory("BaseLayer");
+    const BaseLayerFactory = await ethers.getContractFactory("PortraitLayer");
 
     eyeAccessory = await upgrades.deployProxy(AccessoryLayerFactory, [name, symbol, await minter.getAddress()]);
     bodyAccessory = await upgrades.deployProxy(AccessoryLayerFactory, [name, symbol, await minter.getAddress()]);

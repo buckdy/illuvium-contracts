@@ -7,10 +7,13 @@ interface IAccessoryLayer {
      *
      * @dev Indiciate accessory type to choose each items
      */
-    enum Accessory {
-        EYE,
-        BODY,
-        MOUTH,
-        HEAD
+    enum AccessoryType {
+        Skin,
+        Body,
+        EyeWear,
+        HeadWear,
+        Props
     }
+
+    function layerType() external view returns (AccessoryType);
 }

@@ -36,7 +36,7 @@ describe("Minter", () => {
     const LinkTokenFactory = await ethers.getContractFactory("LinkToken");
     const VRFCoordinatorMockFactory = await ethers.getContractFactory("VRFCoordinatorMock");
     const AccessoryLayerFactory = await ethers.getContractFactory("AccessoryLayer");
-    const BaseLayerFactory = await ethers.getContractFactory("BaseLayer");
+    const BaseLayerFactory = await ethers.getContractFactory("PortraitLayer");
     const MinterFactory = await ethers.getContractFactory("Minter");
 
     eyeLayer = await upgrades.deployProxy(AccessoryLayerFactory, ["Eye", "EYE", await minter.getAddress()]);

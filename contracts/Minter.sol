@@ -35,7 +35,7 @@ contract Minter is VRFConsumerBase, Ownable {
 
     //Purchase Accessory struct
     struct AccessoryMintParams {
-        IAccessoryLayer.Accessory accessoryType;
+        IAccessoryLayer.AccessoryType accessoryType;
         uint64 amount;
     }
 
@@ -47,11 +47,11 @@ contract Minter is VRFConsumerBase, Ownable {
 
     address private constant ETHER_ADDRESS = address(0x0000000000000000000000000000000000000000);
     mapping(uint8 => uint256) public baseLayerPricePerTier;
-    mapping(IAccessoryLayer.Accessory => uint256) public accessoryPrice;
+    mapping(IAccessoryLayer.AccessoryType => uint256) public accessoryPrice;
     mapping(bytes32 => RandomAccessoryMintParams) public randomAccessoryRequester;
     uint256 public accessoryRandomPrice;
 
-    mapping(IAccessoryLayer.Accessory => IBaseIlluvitar) public accessoryIlluvitars;
+    mapping(IAccessoryLayer.AccessoryType => IBaseIlluvitar) public accessoryIlluvitars;
     IBaseIlluvitar public immutable baseLayerIlluvitar;
 
     address public treasury;
@@ -67,10 +67,7 @@ contract Minter is VRFConsumerBase, Ownable {
      * @param _vrfKeyhash Key Hash.
      * @param _vrfFee Fee.
      * @param _baseLayerAddr Body accessory item.
-     * @param _eyeAddr Mouth accessory item.
-     * @param _bodyAddr Body accessory item.
-     * @param _mouthAddr Mouth accessory item.
-     * @param _headAddr Head accessory item.
+     * @param _accessories List of accessory items.
      * @param _treasury Treasury Address.
      * @param _weth WETH Address.
      * @param _oracleRegistry IlluviumOracleRegistry Address.
@@ -81,28 +78,25 @@ contract Minter is VRFConsumerBase, Ownable {
         bytes32 _vrfKeyhash,
         uint256 _vrfFee,
         IBaseIlluvitar _baseLayerAddr,
-        IBaseIlluvitar _eyeAddr,
-        IBaseIlluvitar _bodyAddr,
-        IBaseIlluvitar _mouthAddr,
-        IBaseIlluvitar _headAddr,
+        address[] memory _accessories,
         address _treasury,
         address _weth,
         address _oracleRegistry
     ) VRFConsumerBase(_vrfCoordinator, _linkToken) {
         require(address(_baseLayerAddr) != address(0), "cannot zero address");
-        require(address(_eyeAddr) != address(0), "cannot zero address");
-        require(address(_bodyAddr) != address(0), "cannot zero address");
-        require(address(_mouthAddr) != address(0), "cannot zero address");
-        require(address(_headAddr) != address(0), "cannot zero address");
         require(_treasury != address(0), "cannot zero address");
+        uint256 accessoryTypeCounts = 5;
+        require(_accessories.length == accessoryTypeCounts, "invalid length");
 
         vrfKeyHash = _vrfKeyhash;
         vrfFee = _vrfFee;
         baseLayerIlluvitar = _baseLayerAddr;
-        accessoryIlluvitars[IAccessoryLayer.Accessory.EYE] = _eyeAddr;
-        accessoryIlluvitars[IAccessoryLayer.Accessory.BODY] = _bodyAddr;
-        accessoryIlluvitars[IAccessoryLayer.Accessory.MOUTH] = _mouthAddr;
-        accessoryIlluvitars[IAccessoryLayer.Accessory.HEAD] = _headAddr;
+
+        for (uint256 i = 0; i < accessoryTypeCounts; i += 1) {
+            IAccessoryLayer.AccessoryType type_ = IAccessoryLayer(_accessories[i]).layerType();
+            require(address(accessoryIlluvitars[type_]) == address(0), "already set");
+            accessoryIlluvitars[type_] = IBaseIlluvitar(_accessories[i]);
+        }
 
         treasury = _treasury;
         weth = _weth;
@@ -136,7 +130,7 @@ contract Minter is VRFConsumerBase, Ownable {
      * @param accessory_ 4 accessories item.
      * @param accessoryPrice_ 4 accessories price.
      */
-    function setAccessoryPrice(IAccessoryLayer.Accessory accessory_, uint256 accessoryPrice_) external onlyOwner {
+    function setAccessoryPrice(IAccessoryLayer.AccessoryType accessory_, uint256 accessoryPrice_) external onlyOwner {
         accessoryPrice[accessory_] = accessoryPrice_;
     }
 
@@ -171,7 +165,7 @@ contract Minter is VRFConsumerBase, Ownable {
         for (uint256 i = 0; i < mintParams.amount; i += 1) {
             uint8 typeId = uint8(randomNumber % 4);
             randomNumber /= 4;
-            accessoryIlluvitars[IAccessoryLayer.Accessory(typeId)].mintMultiple(mintParams.requester, 1);
+            accessoryIlluvitars[IAccessoryLayer.AccessoryType(typeId)].mintMultiple(mintParams.requester, 1);
         }
 
         delete randomAccessoryRequester[requestId];
