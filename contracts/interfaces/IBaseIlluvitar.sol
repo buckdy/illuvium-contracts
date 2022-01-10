@@ -20,6 +20,7 @@ interface IBaseIlluvitar {
     function mintMultiple(
         address to,
         uint256 amount,
-        BoxType[] calldata boxTypes
+        BoxType[] calldata boxTypes,
+        uint8[] calldata _tiers
     ) external;
 }

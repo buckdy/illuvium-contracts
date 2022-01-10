@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
-import { Contract, Signer, Wallet, constants, utils } from "ethers";
+import { Contract, Signer, constants, utils } from "ethers";
+import { generateRandomAddress, AccessoryType, BoxType } from "./utils";
 
 enum Accessory {
   EYE = 0,
@@ -8,8 +9,6 @@ enum Accessory {
   MOUTH = 2,
   HEAD = 3,
 }
-
-const generateRandomAddress = () => Wallet.createRandom().address;
 
 describe("Minter", () => {
   let owner: Signer;

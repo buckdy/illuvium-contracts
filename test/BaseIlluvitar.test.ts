@@ -1,35 +1,37 @@
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { Contract, Signer, constants } from "ethers";
+import { AccessoryType, BoxType } from "./utils";
 
-describe("AccessoryLayer", () => {
+describe("BaseIlluvitar", () => {
   let accounts: Signer[];
   let accessoryLayer: Contract;
   let owner: Signer;
   let alice: Signer;
   let bob: Signer;
-  const name: string = "BodyAccessory";
-  const symbol: string = "BodyA";
   let minter: Signer;
+  const name: string = "Illuvitar Body";
+  const symbol: string = "ILV-Body";
+  const accessoryType: AccessoryType = AccessoryType.Body;
 
   beforeEach(async () => {
     accounts = await ethers.getSigners();
     [owner, alice, bob, minter] = accounts;
     const AccessoryLayerFactory = await ethers.getContractFactory("AccessoryLayer");
-    accessoryLayer = await upgrades.deployProxy(AccessoryLayerFactory, [name, symbol, await minter.getAddress()]);
+    accessoryLayer = await upgrades.deployProxy(AccessoryLayerFactory, [
+      name,
+      symbol,
+      await minter.getAddress(),
+      accessoryType,
+    ]);
   });
 
   describe("initializer", () => {
-    it("check name", async () => {
+    it("check initialized data", async () => {
       expect(await accessoryLayer.name()).to.equal(name);
-    });
-
-    it("check symbol", async () => {
       expect(await accessoryLayer.symbol()).to.equal(symbol);
-    });
-
-    it("check minter", async () => {
       expect(await accessoryLayer.minter()).to.equal(await minter.getAddress());
+      expect(await accessoryLayer.layerType()).to.equal(accessoryType);
     });
   });
 
@@ -46,7 +48,7 @@ describe("AccessoryLayer", () => {
       );
     });
 
-    it("set minter", async () => {
+    it("set minter by owner", async () => {
       const tx = await accessoryLayer.connect(owner).setMinter(await bob.getAddress());
       expect(await accessoryLayer.connect(owner).minter()).to.equal(await bob.getAddress());
       await expect(tx)
@@ -56,15 +58,24 @@ describe("AccessoryLayer", () => {
   });
 
   describe("mintMultiple", () => {
+    const boxTypes = [BoxType.Diamond, BoxType.Bronze, BoxType.Platinum];
+    const tiers = [4, 2, 3];
+
     it("Revert if sender is not minter", async () => {
-      await expect(accessoryLayer.connect(alice).mintMultiple(await bob.getAddress(), 3)).to.revertedWith(
-        "This is not minter",
-      );
+      await expect(
+        accessoryLayer.connect(alice).mintMultiple(await bob.getAddress(), 3, boxTypes, tiers),
+      ).to.revertedWith("This is not minter");
     });
 
     it("mint token", async () => {
-      await accessoryLayer.connect(minter).mintMultiple(await bob.getAddress(), 3);
+      const amount = 3;
+      await accessoryLayer.connect(minter).mintMultiple(await bob.getAddress(), 3, boxTypes, tiers);
       expect(await accessoryLayer.lastTokenId()).to.equal(3);
+      for (let i = 1; i <= amount; i += 1) {
+        expect(await accessoryLayer.ownerOf(i)).to.equal(await bob.getAddress());
+        expect(await accessoryLayer.boxTypes(i)).to.equal(boxTypes[i - 1]);
+        expect(await accessoryLayer.tiers(i)).to.equal(tiers[i - 1]);
+      }
     });
   });
 });

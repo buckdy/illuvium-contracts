@@ -27,6 +27,7 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
     // LastToken ID that already minted.
     uint256 public lastTokenId;
     mapping(uint256 => BoxType) public boxTypes;
+    mapping(uint256 => uint8) public tiers;
 
     /**
      * @notice Initialize Base Illuvitar.
@@ -67,12 +68,14 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
     function mintMultiple(
         address to,
         uint256 amount,
-        BoxType[] calldata _boxTypes
+        BoxType[] calldata _boxTypes,
+        uint8[] calldata _tiers
     ) external override {
         require(msg.sender == minter, "This is not minter");
+        require(amount > 0 && _boxTypes.length == amount && _tiers.length == amount, "Invalid length");
 
         for (uint256 i = 0; i < amount; i += 1) {
-            _mint(to, _boxTypes[i]);
+            _mint(to, _boxTypes[i], _tiers[i]);
         }
     }
 
@@ -81,9 +84,14 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
      * @dev inaccessible from outside.
      * @param to NFT receipient address.
      */
-    function _mint(address to, BoxType boxType) private {
+    function _mint(
+        address to,
+        BoxType boxType,
+        uint8 tier
+    ) private {
         lastTokenId += 1;
         _safeMint(to, lastTokenId);
         boxTypes[lastTokenId] = boxType;
+        tiers[lastTokenId] = tier;
     }
 }

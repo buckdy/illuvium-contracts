@@ -23,14 +23,8 @@ contract PortraitLayer is IPortraitLayer, BaseIlluvitar, ERC721HolderUpgradeable
      */
     event Combined(uint256 tokenId, IAccessoryLayer.AccessoryType accessoryType, uint256 accessoryId);
 
-    // Metadata for each accessories
-    struct Metadata {
-        uint8 tier;
-        mapping(IAccessoryLayer.AccessoryType => uint256) accessories;
-    }
-
-    // Metadata mapping
-    mapping(uint256 => Metadata) private _metadatas;
+    // Combined accessories
+    mapping(uint256 => mapping(IAccessoryLayer.AccessoryType => uint256)) public accessories;
     // Illuvitar accessory address mapping
     mapping(IAccessoryLayer.AccessoryType => address) public override accessoryIlluvitars;
     // Indicates accessory illuvatar
@@ -75,45 +69,16 @@ contract PortraitLayer is IPortraitLayer, BaseIlluvitar, ERC721HolderUpgradeable
     ) external {
         require(types.length > 0 && types.length == accessoryIds.length, "Invalid length");
 
-        Metadata storage metadata = _metadatas[tokenId];
-
         for (uint256 i = 0; i < types.length; i += 1) {
-            require(metadata.accessories[types[i]] == 0, "Already combined");
+            require(accessories[tokenId][types[i]] == 0, "Already combined");
             IERC721Upgradeable(accessoryIlluvitars[types[i]]).safeTransferFrom(
                 msg.sender,
                 address(this),
                 accessoryIds[i]
             );
-            metadata.accessories[types[i]] = accessoryIds[i];
+            accessories[tokenId][types[i]] = accessoryIds[i];
             emit Combined(tokenId, types[i], accessoryIds[i]);
         }
-    }
-
-    /**
-     * @notice Get Metadata of combined item.
-     * @param tokenId Base Layer tokenId.
-     * @return tier and all the accessories (EYE, BODY, MOUTH, HEAD)
-     */
-    function getMetadata(uint256 tokenId)
-        external
-        view
-        returns (
-            uint8,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
-        return (
-            _metadatas[tokenId].tier,
-            _metadatas[tokenId].accessories[IAccessoryLayer.AccessoryType.Skin],
-            _metadatas[tokenId].accessories[IAccessoryLayer.AccessoryType.Body],
-            _metadatas[tokenId].accessories[IAccessoryLayer.AccessoryType.EyeWear],
-            _metadatas[tokenId].accessories[IAccessoryLayer.AccessoryType.HeadWear],
-            _metadatas[tokenId].accessories[IAccessoryLayer.AccessoryType.Props]
-        );
     }
 
     /**

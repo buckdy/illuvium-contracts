@@ -1,29 +1,17 @@
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
-import { Contract, Signer, Wallet } from "ethers";
-
-enum Accessory {
-  EYE = 0,
-  BODY = 1,
-  MOUTH = 2,
-  HEAD = 3,
-}
-
-const generateRandomAddress = () => Wallet.createRandom().address;
+import { Contract, Signer } from "ethers";
+import { AccessoryType, BoxType } from "./utils";
 
 describe("PortraitLayer", () => {
   let accounts: Signer[];
   let portraitLayer: Contract;
-  let eyeAccessory: Contract;
-  let bodyAccessory: Contract;
   let owner: Signer;
   let alice: Signer;
-  const name: string = "BaseAccessory";
-  const symbol: string = "BaseA";
   let minter: Signer;
-
-  const mouth = generateRandomAddress();
-  const head = generateRandomAddress();
+  let accessories: Contract[];
+  const name: string = "Illuvitar Portrait";
+  const symbol: string = "ILV-PORT";
 
   beforeEach(async () => {
     accounts = await ethers.getSigners();
@@ -31,31 +19,34 @@ describe("PortraitLayer", () => {
     const AccessoryLayerFactory = await ethers.getContractFactory("AccessoryLayer");
     const PortraitLayerFactory = await ethers.getContractFactory("PortraitLayer");
 
-    eyeAccessory = await upgrades.deployProxy(AccessoryLayerFactory, [name, symbol, await minter.getAddress()]);
-    bodyAccessory = await upgrades.deployProxy(AccessoryLayerFactory, [name, symbol, await minter.getAddress()]);
+    accessories = [];
+    for (let i = 0; AccessoryType.Skin, i <= AccessoryType.Props; i += 1) {
+      accessories.push(await upgrades.deployProxy(AccessoryLayerFactory, [name, symbol, await minter.getAddress(), i]));
+
+      await accessories[i]
+        .connect(minter)
+        .mintMultiple(await alice.getAddress(), 2, [BoxType.Bronze, BoxType.Gold], [0, 3]);
+    }
     portraitLayer = await upgrades.deployProxy(PortraitLayerFactory, [
       name,
       symbol,
       await minter.getAddress(),
-      eyeAccessory.address,
-      bodyAccessory.address,
-      mouth,
-      head,
+      accessories.map(item => item.address),
     ]);
 
-    await eyeAccessory.connect(minter).mintMultiple(await alice.getAddress(), 1);
-    await bodyAccessory.connect(minter).mintMultiple(await alice.getAddress(), 1);
-    await portraitLayer.connect(minter).mintMultiple(await alice.getAddress(), 1);
-    await eyeAccessory.connect(alice).approve(portraitLayer.address, 1);
-    await bodyAccessory.connect(alice).approve(portraitLayer.address, 1);
+    await portraitLayer
+      .connect(minter)
+      .mintMultiple(await alice.getAddress(), 2, [BoxType.Diamond, BoxType.Platinum], [0, 3]);
+
+    for (let i = 0; AccessoryType.Skin, i <= AccessoryType.Props; i += 1) {
+      await accessories[i].connect(alice).approve(portraitLayer.address, 1);
+      await accessories[i].connect(alice).approve(portraitLayer.address, 2);
+    }
   });
 
   describe("initializer", () => {
-    it("check name", async () => {
+    it("check NFT data", async () => {
       expect(await portraitLayer.name()).to.equal(name);
-    });
-
-    it("check symbol", async () => {
       expect(await portraitLayer.symbol()).to.equal(symbol);
     });
 
@@ -63,20 +54,10 @@ describe("PortraitLayer", () => {
       expect(await portraitLayer.minter()).to.equal(await minter.getAddress());
     });
 
-    it("check eye accessory", async () => {
-      expect(await portraitLayer.accessoryIlluvitars(Accessory.EYE)).to.equal(eyeAccessory.address);
-    });
-
-    it("check body accessory", async () => {
-      expect(await portraitLayer.accessoryIlluvitars(Accessory.BODY)).to.equal(bodyAccessory.address);
-    });
-
-    it("check mouth accessory", async () => {
-      expect(await portraitLayer.accessoryIlluvitars(Accessory.MOUTH)).to.equal(mouth);
-    });
-
-    it("check head accessory", async () => {
-      expect(await portraitLayer.accessoryIlluvitars(Accessory.HEAD)).to.equal(head);
+    it("check accessories", async () => {
+      for (let i = 0; AccessoryType.Skin, i <= AccessoryType.Props; i += 1) {
+        expect(await portraitLayer.accessoryIlluvitars(i)).to.equal(accessories[i].address);
+      }
     });
   });
 
@@ -85,29 +66,31 @@ describe("PortraitLayer", () => {
 
     it("Revert if types and accessoryIds length mismatch", async () => {
       await expect(portraitLayer.combine(tokenId, [], [])).to.revertedWith("Invalid length");
-      await expect(portraitLayer.combine(tokenId, [Accessory.EYE], [])).to.revertedWith("Invalid length");
+      await expect(portraitLayer.combine(tokenId, [AccessoryType.EyeWear], [])).to.revertedWith("Invalid length");
     });
 
     it("Revert if not nft owner", async () => {
-      await expect(portraitLayer.connect(owner).combine(tokenId, [Accessory.EYE], [1])).to.revertedWith(
-        "This is not owner",
+      await expect(portraitLayer.connect(owner).combine(tokenId, [AccessoryType.EyeWear], [1])).to.revertedWith(
+        "ERC721: transfer of token that is not own",
       );
     });
 
-    it("Revert if already combined", async () => {
-      await expect(
-        portraitLayer.connect(alice).combine(tokenId, [Accessory.EYE, Accessory.EYE], [1, 1]),
-      ).to.revertedWith("Already combined");
+    it("should combine", async () => {
+      const tx = await portraitLayer
+        .connect(alice)
+        .combine(tokenId, [AccessoryType.EyeWear, AccessoryType.Body], [2, 1]);
+      await expect(tx).to.emit(portraitLayer, "Combined").withArgs(tokenId, AccessoryType.EyeWear, 2);
+      await expect(tx).to.emit(portraitLayer, "Combined").withArgs(tokenId, AccessoryType.Body, 1);
+      expect(await portraitLayer.accessories(tokenId, AccessoryType.EyeWear)).to.be.equal(2);
+      expect(await portraitLayer.accessories(tokenId, AccessoryType.Body)).to.be.equal(1);
     });
 
-    it("should combine", async () => {
-      const tx = await portraitLayer.connect(alice).combine(tokenId, [Accessory.EYE, Accessory.BODY], [1, 1]);
-      await expect(tx).to.emit(portraitLayer, "Combined").withArgs(tokenId, [Accessory.EYE, Accessory.BODY], [1, 1]);
-      const metadata = await portraitLayer.getMetadata(tokenId);
-      expect(metadata[1]).to.equal(1);
-      expect(metadata[2]).to.equal(1);
-      expect(metadata[3]).to.equal(0);
-      expect(metadata[4]).to.equal(0);
+    it("Revert if already combined", async () => {
+      await portraitLayer.connect(alice).combine(tokenId, [AccessoryType.EyeWear, AccessoryType.Body], [1, 1]);
+
+      await expect(portraitLayer.connect(alice).combine(tokenId, [AccessoryType.EyeWear], [2])).to.revertedWith(
+        "Already combined",
+      );
     });
   });
 });
