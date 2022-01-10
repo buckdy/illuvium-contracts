@@ -18,7 +18,7 @@ describe("Minter", () => {
   let vrfCoordinator: Contract;
   let linkToken: Contract;
   let minterContract: Contract;
-  let baseLayer: Contract;
+  let portraitLayer: Contract;
   let eyeLayer: Contract;
   let bodyLayer: Contract;
   let mouthLayer: Contract;
@@ -36,14 +36,14 @@ describe("Minter", () => {
     const LinkTokenFactory = await ethers.getContractFactory("LinkToken");
     const VRFCoordinatorMockFactory = await ethers.getContractFactory("VRFCoordinatorMock");
     const AccessoryLayerFactory = await ethers.getContractFactory("AccessoryLayer");
-    const BaseLayerFactory = await ethers.getContractFactory("PortraitLayer");
+    const PortraitLayerFactory = await ethers.getContractFactory("PortraitLayer");
     const MinterFactory = await ethers.getContractFactory("Minter");
 
     eyeLayer = await upgrades.deployProxy(AccessoryLayerFactory, ["Eye", "EYE", await minter.getAddress()]);
     bodyLayer = await upgrades.deployProxy(AccessoryLayerFactory, ["Body", "BODY", await minter.getAddress()]);
     mouthLayer = await upgrades.deployProxy(AccessoryLayerFactory, ["Mouth", "MOUTH", await minter.getAddress()]);
     headLayer = await upgrades.deployProxy(AccessoryLayerFactory, ["Head", "HEAD", await minter.getAddress()]);
-    baseLayer = await upgrades.deployProxy(BaseLayerFactory, [
+    portraitLayer = await upgrades.deployProxy(PortraitLayerFactory, [
       "Base",
       "BASE",
       await minter.getAddress(),
@@ -60,7 +60,7 @@ describe("Minter", () => {
       linkToken.address,
       keyHash,
       fee,
-      baseLayer.address,
+      portraitLayer.address,
       eyeLayer.address,
       bodyLayer.address,
       mouthLayer.address,
@@ -70,7 +70,7 @@ describe("Minter", () => {
       oracleRegistry,
     );
 
-    await baseLayer.setMinter(minterContract.address);
+    await portraitLayer.setMinter(minterContract.address);
     await eyeLayer.setMinter(minterContract.address);
     await bodyLayer.setMinter(minterContract.address);
     await mouthLayer.setMinter(minterContract.address);
@@ -105,7 +105,7 @@ describe("Minter", () => {
           linkToken.address,
           keyHash,
           fee,
-          baseLayer.address,
+          portraitLayer.address,
           constants.AddressZero,
           bodyLayer.address,
           mouthLayer.address,
@@ -122,7 +122,7 @@ describe("Minter", () => {
           linkToken.address,
           keyHash,
           fee,
-          baseLayer.address,
+          portraitLayer.address,
           eyeLayer.address,
           constants.AddressZero,
           mouthLayer.address,
@@ -139,7 +139,7 @@ describe("Minter", () => {
           linkToken.address,
           keyHash,
           fee,
-          baseLayer.address,
+          portraitLayer.address,
           eyeLayer.address,
           bodyLayer.address,
           constants.AddressZero,
@@ -156,7 +156,7 @@ describe("Minter", () => {
           linkToken.address,
           keyHash,
           fee,
-          baseLayer.address,
+          portraitLayer.address,
           eyeLayer.address,
           bodyLayer.address,
           mouthLayer.address,
@@ -173,7 +173,7 @@ describe("Minter", () => {
           linkToken.address,
           keyHash,
           fee,
-          baseLayer.address,
+          portraitLayer.address,
           eyeLayer.address,
           bodyLayer.address,
           mouthLayer.address,
@@ -203,25 +203,25 @@ describe("Minter", () => {
 
     it("should set treasury", async () => {
       expect(await minterContract.treasury()).to.equal(treasury);
-      await minterContract.connect(owner).setTreasury(baseLayer.address);
-      expect(await minterContract.treasury()).to.equal(baseLayer.address);
+      await minterContract.connect(owner).setTreasury(portraitLayer.address);
+      expect(await minterContract.treasury()).to.equal(portraitLayer.address);
     });
   });
 
-  describe("setBaseLayerPricePerTier", () => {
+  describe("setPortraitLayerPricePerTier", () => {
     it("Revert if caller is not owner", async () => {
-      await expect(minterContract.connect(alice).setBaseLayerPricePerTier(0, fee)).to.revertedWith(
+      await expect(minterContract.connect(alice).setPortraitLayerPricePerTier(0, fee)).to.revertedWith(
         "Ownable: caller is not the owner",
       );
     });
 
     it("Revert if tier not exist", async () => {
-      await expect(minterContract.setBaseLayerPricePerTier(6, fee)).to.revertedWith("only exist 6 tiers");
+      await expect(minterContract.setPortraitLayerPricePerTier(6, fee)).to.revertedWith("only exist 6 tiers");
     });
 
     it("should set tier price", async () => {
-      await minterContract.setBaseLayerPricePerTier(0, fee);
-      expect(await minterContract.baseLayerPricePerTier(0)).to.equal(fee);
+      await minterContract.setPortraitLayerPricePerTier(0, fee);
+      expect(await minterContract.portraitLayerPricePerTier(0)).to.equal(fee);
     });
   });
 
@@ -267,14 +267,14 @@ describe("Minter", () => {
 
   describe("purchase + fulfillRandomness", () => {
     it("should mint random based and delete requester", async () => {
-      await minterContract.setBaseLayerPricePerTier(Accessory.EYE, fee);
+      await minterContract.setPortraitLayerPricePerTier(Accessory.EYE, fee);
       await minterContract.setAccessoryPrice(Accessory.EYE, fee);
       await minterContract.setAccessoryRandomPrice(fee);
-      const baseLayerMintParams = [[Accessory.EYE, 1]];
+      const portraitLayerMintParams = [[Accessory.EYE, 1]];
       const accessoryMintParams = [[Accessory.EYE, 1]];
       const tx = await minterContract
         .connect(alice)
-        .purchase(baseLayerMintParams, accessoryMintParams, 1, constants.AddressZero, { value: fee.mul(3) });
+        .purchase(portraitLayerMintParams, accessoryMintParams, 1, constants.AddressZero, { value: fee.mul(3) });
       const receipt = await tx.wait();
       const requestId = receipt.events[5].data;
       await expect(tx)

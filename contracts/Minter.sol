@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "./interfaces/IAccessoryLayer.sol";
 import "./interfaces/IBaseIlluvitar.sol";
+import "./interfaces/IPortraitLayer.sol";
 import "./interfaces/IOracle.sol";
 import "./interfaces/IOracleRegistry.sol";
 
@@ -19,40 +20,62 @@ import "./interfaces/IOracleRegistry.sol";
 contract Minter is VRFConsumerBase, Ownable {
     using SafeERC20 for IERC20;
 
+    event TreasurySet(address indexed treasury);
+    event PortraitLayerPriceSet(IBaseIlluvitar.BoxType indexed type_, uint256 price);
+    event AccessoryLayerFullRandomPriceSet(IBaseIlluvitar.BoxType indexed type_, uint256 price);
+    event AccessoryLayerSemiRandomPriceSet(IBaseIlluvitar.BoxType indexed type_, uint256 price);
+    event PortraitLayerTierChancesSet(IBaseIlluvitar.BoxType indexed type_, uint16[] tierChances);
+    event AccessoryLayerTierChancesSet(IBaseIlluvitar.BoxType indexed type_, uint16[] tierChances);
+    event OracleRegistrySet(address indexed oracleRegistry);
+
     /**
      * @notice event emitted random accessory requested.
      * @dev emitted in {purchase} or {requestRandomAgain} function.
      * @param requester requester address.
      * @param requestId requestId number.
      */
-    event RandomAccessoryRequested(address indexed requester, bytes32 requestId);
+    event MintRequested(address indexed requester, bytes32 requestId);
 
     //Purchase Body struct
-    struct BaseLayerMintParams {
-        uint8 tier;
+    struct PortraitLayerMintParams {
+        IBaseIlluvitar.BoxType boxType;
         uint64 amount;
     }
 
     //Purchase Accessory struct
-    struct AccessoryMintParams {
+    struct AccessoryLayerSemiRandomMintParams {
         IAccessoryLayer.AccessoryType accessoryType;
+        IBaseIlluvitar.BoxType boxType;
+        uint64 amount;
+    }
+
+    struct AccessoryLayerFullRandomMintParams {
+        IBaseIlluvitar.BoxType boxType;
         uint64 amount;
     }
 
     //Purchase RandomAccessory struct
-    struct RandomAccessoryMintParams {
+    struct MintRequest {
         address requester;
-        uint64 amount;
+        PortraitLayerMintParams[] portraitLayerMintParams;
+        AccessoryLayerSemiRandomMintParams[] accessorySemiRandomMintParams;
+        AccessoryLayerFullRandomMintParams[] accessoryFullRandomMintParams;
     }
 
     address private constant ETHER_ADDRESS = address(0x0000000000000000000000000000000000000000);
-    mapping(uint8 => uint256) public baseLayerPricePerTier;
-    mapping(IAccessoryLayer.AccessoryType => uint256) public accessoryPrice;
-    mapping(bytes32 => RandomAccessoryMintParams) public randomAccessoryRequester;
-    uint256 public accessoryRandomPrice;
+    uint8 public constant ACCESSORY_TYPE_COUNT = 5;
+    uint256 public constant MAX_TIER = 5;
+
+    mapping(IBaseIlluvitar.BoxType => uint256) public portraitLayerPrices;
+    mapping(IBaseIlluvitar.BoxType => uint256) public accessoryLayerSemiRandomPrices;
+    mapping(IBaseIlluvitar.BoxType => uint256) public accessoryLayerFullRandomPrices;
+    mapping(IBaseIlluvitar.BoxType => uint16[]) public portraitLayerTierChances;
+    mapping(IBaseIlluvitar.BoxType => uint16[]) public accessoryLayerTierChances;
+
+    mapping(bytes32 => MintRequest) public mintRequests;
 
     mapping(IAccessoryLayer.AccessoryType => IBaseIlluvitar) public accessoryIlluvitars;
-    IBaseIlluvitar public immutable baseLayerIlluvitar;
+    IBaseIlluvitar public immutable portraitLayerIlluvitar;
 
     address public treasury;
     address public weth;
@@ -66,8 +89,7 @@ contract Minter is VRFConsumerBase, Ownable {
      * @param _linkToken LINK token address.
      * @param _vrfKeyhash Key Hash.
      * @param _vrfFee Fee.
-     * @param _baseLayerAddr Body accessory item.
-     * @param _accessories List of accessory items.
+     * @param _portraitLayerAddr Body accessory item.
      * @param _treasury Treasury Address.
      * @param _weth WETH Address.
      * @param _oracleRegistry IlluviumOracleRegistry Address.
@@ -77,27 +99,24 @@ contract Minter is VRFConsumerBase, Ownable {
         address _linkToken,
         bytes32 _vrfKeyhash,
         uint256 _vrfFee,
-        IBaseIlluvitar _baseLayerAddr,
-        address[] memory _accessories,
+        address _portraitLayerAddr,
         address _treasury,
         address _weth,
         address _oracleRegistry
     ) VRFConsumerBase(_vrfCoordinator, _linkToken) {
-        require(address(_baseLayerAddr) != address(0), "cannot zero address");
+        require(address(_portraitLayerAddr) != address(0), "cannot zero address");
         require(_treasury != address(0), "cannot zero address");
-        uint256 accessoryTypeCounts = 5;
-        require(_accessories.length == accessoryTypeCounts, "invalid length");
 
         vrfKeyHash = _vrfKeyhash;
         vrfFee = _vrfFee;
-        baseLayerIlluvitar = _baseLayerAddr;
+        portraitLayerIlluvitar = IBaseIlluvitar(_portraitLayerAddr);
 
-        for (uint256 i = 0; i < accessoryTypeCounts; i += 1) {
-            IAccessoryLayer.AccessoryType type_ = IAccessoryLayer(_accessories[i]).layerType();
-            require(address(accessoryIlluvitars[type_]) == address(0), "already set");
-            accessoryIlluvitars[type_] = IBaseIlluvitar(_accessories[i]);
+        for (uint8 i = 0; i < ACCESSORY_TYPE_COUNT; i += 1) {
+            IAccessoryLayer.AccessoryType type_ = IAccessoryLayer.AccessoryType(i);
+            accessoryIlluvitars[type_] = IBaseIlluvitar(IPortraitLayer(_portraitLayerAddr).accessoryIlluvitars(type_));
         }
 
+        emit TreasurySet(_treasury);
         treasury = _treasury;
         weth = _weth;
         oracleRegistry = _oracleRegistry;
@@ -111,36 +130,124 @@ contract Minter is VRFConsumerBase, Ownable {
     function setTreasury(address treasury_) external onlyOwner {
         require(treasury_ != address(0), "Treasury address cannot zero");
         treasury = treasury_;
+
+        emit TreasurySet(treasury_);
     }
 
     /**
-     * @notice setFunction for Body Accessory Price.
+     * @notice Set portraitLayer prices for each box type.
      * @dev only owner can call this function.
-     * @param tier_ 6 tiers item.
-     * @param tierPrice_ 6 tiers price.
+     * @param boxTypes list of box types
+     * @param prices list of prices
      */
-    function setBaseLayerPricePerTier(uint8 tier_, uint256 tierPrice_) external onlyOwner {
-        require(tier_ < 6, "only exist 6 tiers");
-        baseLayerPricePerTier[tier_] = tierPrice_;
+    function setPortraitLayerPrice(IBaseIlluvitar.BoxType[] calldata boxTypes, uint256[] calldata prices)
+        external
+        onlyOwner
+    {
+        require(boxTypes.length > 0 && boxTypes.length == prices.length, "Invalid length");
+
+        for (uint256 i = 0; i < boxTypes.length; i += 1) {
+            portraitLayerPrices[boxTypes[i]] = prices[i];
+            emit PortraitLayerPriceSet(boxTypes[i], prices[i]);
+        }
     }
 
     /**
-     * @notice setFunction for 4 Accessories (Eye, Head, Mouth, Body) Price.
+     * @notice Set accessoryLayer full random prices for each box type.
      * @dev only owner can call this function.
-     * @param accessory_ 4 accessories item.
-     * @param accessoryPrice_ 4 accessories price.
+     * @param boxTypes list of box types
+     * @param prices list of prices
      */
-    function setAccessoryPrice(IAccessoryLayer.AccessoryType accessory_, uint256 accessoryPrice_) external onlyOwner {
-        accessoryPrice[accessory_] = accessoryPrice_;
+    function setAccessoryLayerFullRandomPrice(IBaseIlluvitar.BoxType[] calldata boxTypes, uint256[] calldata prices)
+        external
+        onlyOwner
+    {
+        require(boxTypes.length > 0 && boxTypes.length == prices.length, "Invalid length");
+
+        for (uint256 i = 0; i < boxTypes.length; i += 1) {
+            accessoryLayerFullRandomPrices[boxTypes[i]] = prices[i];
+            emit AccessoryLayerFullRandomPriceSet(boxTypes[i], prices[i]);
+        }
     }
 
     /**
-     * @notice setFunction for Random Accessory Price.
+     * @notice Set accessoryLayer semi random prices for each box type.
      * @dev only owner can call this function.
-     * @param accessoryRandomPrice_ Random accessory price.
+     * @param boxTypes list of box types
+     * @param prices list of prices
      */
-    function setAccessoryRandomPrice(uint256 accessoryRandomPrice_) external onlyOwner {
-        accessoryRandomPrice = accessoryRandomPrice_;
+    function setAccessoryLayerSemiRandomPrices(IBaseIlluvitar.BoxType[] calldata boxTypes, uint256[] calldata prices)
+        external
+        onlyOwner
+    {
+        require(boxTypes.length > 0 && boxTypes.length == prices.length, "Invalid length");
+
+        for (uint256 i = 0; i < boxTypes.length; i += 1) {
+            accessoryLayerSemiRandomPrices[boxTypes[i]] = prices[i];
+            emit AccessoryLayerSemiRandomPriceSet(boxTypes[i], prices[i]);
+        }
+    }
+
+    /**
+     * @notice Set portrait layer tier chances for each box type
+     * @dev only owner can call this function.
+     * @param boxTypes list of box types
+     * @param tierChances list of tier chances
+     */
+    function setPortraitLayerTierChances(IBaseIlluvitar.BoxType[] calldata boxTypes, uint16[][] calldata tierChances)
+        external
+        onlyOwner
+    {
+        require(boxTypes.length > 0 && boxTypes.length == tierChances.length, "Invalid length");
+
+        for (uint256 i = 0; i < boxTypes.length; i += 1) {
+            require(tierChances[i].length == MAX_TIER + 1, "Invalid tier chance length");
+
+            uint16[] storage currentTierChances = portraitLayerTierChances[boxTypes[i]];
+
+            if (currentTierChances.length == 0) {
+                for (uint256 j = 0; j <= MAX_TIER; j += 1) {
+                    currentTierChances.push(tierChances[i][j]);
+                }
+            } else {
+                for (uint256 j = 0; j <= MAX_TIER; j += 1) {
+                    currentTierChances[j] = tierChances[i][j];
+                }
+            }
+
+            emit PortraitLayerTierChancesSet(boxTypes[i], tierChances[i]);
+        }
+    }
+
+    /**
+     * @notice Set accessory layer tier chances for each box type
+     * @dev only owner can call this function.
+     * @param boxTypes list of box types
+     * @param tierChances list of tier chances
+     */
+    function setAccessoryLayerTierChances(IBaseIlluvitar.BoxType[] calldata boxTypes, uint16[][] calldata tierChances)
+        external
+        onlyOwner
+    {
+        require(boxTypes.length > 0 && boxTypes.length == tierChances.length, "Invalid length");
+
+        for (uint256 i = 0; i < boxTypes.length; i += 1) {
+            require(tierChances[i].length == MAX_TIER + 1, "Invalid tier chance length");
+
+            uint16[] storage currentTierChances = accessoryLayerTierChances[boxTypes[i]];
+
+            if (currentTierChances.length == 0) {
+                for (uint256 j = 0; j <= MAX_TIER; j += 1) {
+                    currentTierChances.push(tierChances[i][j]);
+                }
+            } else {
+                for (uint256 j = 0; j <= MAX_TIER; j += 1) {
+                    currentTierChances[j] = tierChances[i][j];
+                }
+            }
+
+            emit AccessoryLayerTierChancesSet(boxTypes[i], tierChances[i]);
+        }
     }
 
     /**
@@ -150,6 +257,8 @@ contract Minter is VRFConsumerBase, Ownable {
      */
     function setOracleRegistry(address oracleRegistry_) external onlyOwner {
         oracleRegistry = oracleRegistry_;
+
+        emit OracleRegistrySet(oracleRegistry_);
     }
 
     /**
@@ -159,57 +268,57 @@ contract Minter is VRFConsumerBase, Ownable {
      * @param randomNumber Random Number.
      */
     function fulfillRandomness(bytes32 requestId, uint256 randomNumber) internal override {
-        RandomAccessoryMintParams memory mintParams = randomAccessoryRequester[requestId];
+        MintRequest storage mintRequest = mintRequests[requestId];
 
-        //need to change some code
-        for (uint256 i = 0; i < mintParams.amount; i += 1) {
-            uint8 typeId = uint8(randomNumber % 4);
-            randomNumber /= 4;
-            accessoryIlluvitars[IAccessoryLayer.AccessoryType(typeId)].mintMultiple(mintParams.requester, 1);
-        }
+        uint256 seed = randomNumber;
 
-        delete randomAccessoryRequester[requestId];
+        delete mintRequests[requestId];
     }
 
     /**
      * @notice Mint for Base and Accesory items. Users will send ETH or sILV to mint itmes
-     * @param baseLayerMintParams requested baselayer items.
-     * @param accessoryMintParams requested accessorylayer items.
-     * @param accessoryRandomAmount requested amount for random accessories.
+     * @param portraitLayerMintParams portrait layer mint params.
+     * @param accessorySemiRandomMintParams accessory layer semi random mint params.
+     * @param accessoryFullRandomMintParams accessory layer full random mint params.
      * @param paymentToken payment token address.
      */
     function purchase(
-        BaseLayerMintParams[] calldata baseLayerMintParams,
-        AccessoryMintParams[] calldata accessoryMintParams,
-        uint64 accessoryRandomAmount,
+        PortraitLayerMintParams[] calldata portraitLayerMintParams,
+        AccessoryLayerSemiRandomMintParams[] calldata accessorySemiRandomMintParams,
+        AccessoryLayerFullRandomMintParams[] calldata accessoryFullRandomMintParams,
         address paymentToken
     ) external payable {
-        uint256 etherPrice = 0;
+        uint256 etherPrice;
 
-        uint256 baseLayerParamLength = baseLayerMintParams.length;
-        for (uint256 i = 0; i < baseLayerParamLength; i += 1) {
-            etherPrice += uint256(baseLayerMintParams[i].amount) * baseLayerPricePerTier[baseLayerMintParams[i].tier];
-            baseLayerIlluvitar.mintMultiple(msg.sender, uint256(baseLayerMintParams[i].amount));
+        bytes32 requestId = requestRandomness(vrfKeyHash, vrfFee);
+
+        MintRequest storage mintRequest = mintRequests[requestId];
+        mintRequest.requester = _msgSender();
+
+        emit MintRequested(_msgSender(), requestId);
+
+        uint256 length = portraitLayerMintParams.length;
+        for (uint256 i = 0; i < length; i += 1) {
+            etherPrice +=
+                uint256(portraitLayerMintParams[i].amount) *
+                portraitLayerPrices[portraitLayerMintParams[i].boxType];
+            mintRequest.portraitLayerMintParams.push(portraitLayerMintParams[i]);
         }
 
-        uint256 accessoryParamLength = accessoryMintParams.length;
-        for (uint256 i = 0; i < accessoryParamLength; i += 1) {
-            etherPrice += uint256(accessoryMintParams[i].amount) * accessoryPrice[accessoryMintParams[i].accessoryType];
-            accessoryIlluvitars[accessoryMintParams[i].accessoryType].mintMultiple(
-                msg.sender,
-                uint256(accessoryMintParams[i].amount)
-            );
+        length = accessorySemiRandomMintParams.length;
+        for (uint256 i = 0; i < length; i += 1) {
+            etherPrice +=
+                uint256(accessorySemiRandomMintParams[i].amount) *
+                accessoryLayerSemiRandomPrices[accessorySemiRandomMintParams[i].boxType];
+            mintRequest.accessorySemiRandomMintParams.push(accessorySemiRandomMintParams[i]);
         }
 
-        if (accessoryRandomAmount > 0) {
-            bytes32 requestId = requestRandomness(vrfKeyHash, vrfFee);
-
-            RandomAccessoryMintParams storage mintParams = randomAccessoryRequester[requestId];
-            mintParams.requester = msg.sender;
-            mintParams.amount = accessoryRandomAmount;
-
-            etherPrice += accessoryRandomAmount * accessoryRandomPrice;
-            emit RandomAccessoryRequested(msg.sender, requestId);
+        length = accessoryFullRandomMintParams.length;
+        for (uint256 i = 0; i < length; i += 1) {
+            etherPrice +=
+                uint256(accessoryFullRandomMintParams[i].amount) *
+                accessoryLayerFullRandomPrices[accessoryFullRandomMintParams[i].boxType];
+            mintRequest.accessoryFullRandomMintParams.push(accessoryFullRandomMintParams[i]);
         }
 
         if (paymentToken == ETHER_ADDRESS) {
@@ -220,27 +329,27 @@ contract Minter is VRFConsumerBase, Ownable {
             oracle.update();
             uint256 tokenAmount = oracle.consult(weth, etherPrice);
             require(tokenAmount > 0, "Invalid price");
-            IERC20(paymentToken).safeTransferFrom(msg.sender, treasury, tokenAmount);
+            IERC20(paymentToken).safeTransferFrom(_msgSender(), treasury, tokenAmount);
         }
     }
 
-    /**
-     * @notice Request random number again if failed.
-     * @dev only owner can call this function.
-     * @param requestId request id number.
-     */
-    function requestRandomAgain(bytes32 requestId) external onlyOwner {
-        RandomAccessoryMintParams memory oldMintParams = randomAccessoryRequester[requestId];
-        require(oldMintParams.amount > 0 && oldMintParams.requester != address(0), "Invalid requestId");
+    // /**
+    //  * @notice Request random number again if failed.
+    //  * @dev only owner can call this function.
+    //  * @param requestId request id number.
+    //  */
+    // function requestRandomAgain(bytes32 requestId) external onlyOwner {
+    //     MintRequest memory oldMintParams = mintRequests[requestId];
+    //     require(oldMintParams.amount > 0 && oldMintParams.requester != address(0), "Invalid requestId");
 
-        bytes32 newRequestId = requestRandomness(vrfKeyHash, vrfFee);
+    //     bytes32 newRequestId = requestRandomness(vrfKeyHash, vrfFee);
 
-        RandomAccessoryMintParams storage newMintParams = randomAccessoryRequester[newRequestId];
-        newMintParams.requester = oldMintParams.requester;
-        newMintParams.amount = oldMintParams.amount;
+    //     MintRequest storage newMintParams = mintRequests[newRequestId];
+    //     newMintParams.requester = oldMintParams.requester;
+    //     newMintParams.amount = oldMintParams.amount;
 
-        emit RandomAccessoryRequested(newMintParams.requester, newRequestId);
+    //     emit MintRequested(newMintParams.requester, newRequestId);
 
-        delete randomAccessoryRequester[requestId];
-    }
+    //     delete mintRequests[requestId];
+    // }
 }

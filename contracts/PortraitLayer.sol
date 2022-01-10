@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import "./BaseIlluvitar.sol";
 import "./interfaces/IAccessoryLayer.sol";
+import "./interfaces/IPortraitLayer.sol";
 
 /**
     @title PortraitLayer, this contract is inherited BaseIlluvitar contract,
@@ -12,15 +13,15 @@ import "./interfaces/IAccessoryLayer.sol";
     @author Dmitry Yakovlevich
  */
 
-contract PortraitLayer is BaseIlluvitar, ERC721HolderUpgradeable {
+contract PortraitLayer is IPortraitLayer, BaseIlluvitar, ERC721HolderUpgradeable {
     /**
      * @notice event emitted when list of accessory pairs (tokenId, type) are combined to the base layer.
      * @dev emitted in {combine} function.
      * @param tokenId base layer token id.
-     * @param types list of accessory types.
-     * @param accessoryIds list of tokenIds for each type of accessory.
+     * @param accessoryType accessory type.
+     * @param accessoryId accessory id to be combined.
      */
-    event Combined(uint256 tokenId, IAccessoryLayer.AccessoryType[] types, uint256[] accessoryIds);
+    event Combined(uint256 tokenId, IAccessoryLayer.AccessoryType accessoryType, uint256 accessoryId);
 
     // Metadata for each accessories
     struct Metadata {
@@ -30,8 +31,10 @@ contract PortraitLayer is BaseIlluvitar, ERC721HolderUpgradeable {
 
     // Metadata mapping
     mapping(uint256 => Metadata) private _metadatas;
-    // illuvitar accessory address mapping
-    mapping(IAccessoryLayer.AccessoryType => address) public accessoryIlluvitars;
+    // Illuvitar accessory address mapping
+    mapping(IAccessoryLayer.AccessoryType => address) public override accessoryIlluvitars;
+    // Indicates accessory illuvatar
+    mapping(address => bool) public isAccessoryIlluvitar;
 
     /**
      * @notice Initialize Base Layer.
@@ -55,6 +58,7 @@ contract PortraitLayer is BaseIlluvitar, ERC721HolderUpgradeable {
             IAccessoryLayer.AccessoryType type_ = IAccessoryLayer(_accessories[i]).layerType();
             require(address(accessoryIlluvitars[type_]) == address(0), "already set");
             accessoryIlluvitars[type_] = _accessories[i];
+            isAccessoryIlluvitar[_accessories[i]] = true;
         }
     }
 
@@ -71,7 +75,6 @@ contract PortraitLayer is BaseIlluvitar, ERC721HolderUpgradeable {
     ) external {
         require(types.length > 0 && types.length == accessoryIds.length, "Invalid length");
 
-        require(ownerOf(tokenId) == msg.sender, "This is not owner");
         Metadata storage metadata = _metadatas[tokenId];
 
         for (uint256 i = 0; i < types.length; i += 1) {
@@ -82,8 +85,8 @@ contract PortraitLayer is BaseIlluvitar, ERC721HolderUpgradeable {
                 accessoryIds[i]
             );
             metadata.accessories[types[i]] = accessoryIds[i];
+            emit Combined(tokenId, types[i], accessoryIds[i]);
         }
-        emit Combined(tokenId, types, accessoryIds);
     }
 
     /**
@@ -111,5 +114,18 @@ contract PortraitLayer is BaseIlluvitar, ERC721HolderUpgradeable {
             _metadatas[tokenId].accessories[IAccessoryLayer.AccessoryType.HeadWear],
             _metadatas[tokenId].accessories[IAccessoryLayer.AccessoryType.Props]
         );
+    }
+
+    /**
+     * @notice Make sure to receive only accessory layer
+     */
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) public override returns (bytes4) {
+        require(isAccessoryIlluvitar[_msgSender()], "Not accessory");
+        return this.onERC721Received.selector;
     }
 }
