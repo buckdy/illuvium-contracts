@@ -270,9 +270,96 @@ contract Minter is VRFConsumerBase, Ownable {
     function fulfillRandomness(bytes32 requestId, uint256 randomNumber) internal override {
         MintRequest storage mintRequest = mintRequests[requestId];
 
+        address requestor = mintRequest.requester;
+
         uint256 seed = randomNumber;
+        uint16 chance;
+
+        uint256 portraitLayerMintLength = mintRequest.portraitLayerMintParams.length;
+
+        for (uint256 i = 0; i < portraitLayerMintLength; i += 1) {
+            IBaseIlluvitar.BoxType boxType = mintRequest.portraitLayerMintParams[i].boxType;
+
+            uint16[] memory tierChances = portraitLayerTierChances[boxType];
+            uint256 tierLength = tierChances.length;
+
+            uint256 amount = mintRequest.portraitLayerMintParams[i].amount;
+            for (uint256 j = 0; j < amount; j += 1) {
+                (chance, seed) = _getRandChance(seed);
+                uint8 selectedTier;
+
+                for (uint8 tier = 0; tier < tierLength; tier += 1) {
+                    if (tierChances[tier] >= chance) {
+                        selectedTier = tier;
+                        break;
+                    }
+                }
+
+                portraitLayerIlluvitar.mintSingle(requestor, boxType, selectedTier);
+            }
+        }
+
+        uint256 accessorySemiRandomMintLength = mintRequest.accessorySemiRandomMintParams.length;
+
+        for (uint256 i = 0; i < accessorySemiRandomMintLength; i += 1) {
+            IBaseIlluvitar.BoxType boxType = mintRequest.accessorySemiRandomMintParams[i].boxType;
+            IBaseIlluvitar accessoryLayer = accessoryIlluvitars[
+                mintRequest.accessorySemiRandomMintParams[i].accessoryType
+            ];
+
+            uint16[] memory tierChances = accessoryLayerTierChances[boxType];
+            uint256 tierLength = tierChances.length;
+
+            uint256 amount = mintRequest.accessorySemiRandomMintParams[i].amount;
+            for (uint256 j = 0; j < amount; j += 1) {
+                (chance, seed) = _getRandChance(seed);
+                uint8 selectedTier;
+
+                for (uint8 tier = 0; tier < tierLength; tier += 1) {
+                    if (tierChances[tier] >= chance) {
+                        selectedTier = tier;
+                        break;
+                    }
+                }
+
+                accessoryLayer.mintSingle(requestor, boxType, selectedTier);
+            }
+        }
+
+        uint256 accessoryFullRandomMintLength = mintRequest.accessoryFullRandomMintParams.length;
+
+        for (uint256 i = 0; i < accessoryFullRandomMintLength; i += 1) {
+            IBaseIlluvitar.BoxType boxType = mintRequest.accessoryFullRandomMintParams[i].boxType;
+
+            uint16[] memory tierChances = accessoryLayerTierChances[boxType];
+            uint256 tierLength = tierChances.length;
+
+            uint256 amount = mintRequest.accessoryFullRandomMintParams[i].amount;
+            for (uint256 j = 0; j < amount; j += 1) {
+                (chance, seed) = _getRandChance(seed);
+                IAccessoryLayer.AccessoryType accessoryType = IAccessoryLayer.AccessoryType(
+                    uint8(seed % ACCESSORY_TYPE_COUNT)
+                );
+                uint8 selectedTier;
+
+                for (uint8 tier = 0; tier < tierLength; tier += 1) {
+                    if (tierChances[tier] >= chance) {
+                        selectedTier = tier;
+                        break;
+                    }
+                }
+
+                accessoryIlluvitars[accessoryType].mintSingle(requestor, boxType, selectedTier);
+            }
+        }
 
         delete mintRequests[requestId];
+    }
+
+    function _getRandChance(uint256 seed) private pure returns (uint16, uint256) {
+        uint256 rand = uint256(keccak256(abi.encodePacked(seed, seed)));
+        uint16 chance = uint16(rand % 10000);
+        return (chance, rand / 10000);
     }
 
     /**
@@ -332,24 +419,4 @@ contract Minter is VRFConsumerBase, Ownable {
             IERC20(paymentToken).safeTransferFrom(_msgSender(), treasury, tokenAmount);
         }
     }
-
-    // /**
-    //  * @notice Request random number again if failed.
-    //  * @dev only owner can call this function.
-    //  * @param requestId request id number.
-    //  */
-    // function requestRandomAgain(bytes32 requestId) external onlyOwner {
-    //     MintRequest memory oldMintParams = mintRequests[requestId];
-    //     require(oldMintParams.amount > 0 && oldMintParams.requester != address(0), "Invalid requestId");
-
-    //     bytes32 newRequestId = requestRandomness(vrfKeyHash, vrfFee);
-
-    //     MintRequest storage newMintParams = mintRequests[newRequestId];
-    //     newMintParams.requester = oldMintParams.requester;
-    //     newMintParams.amount = oldMintParams.amount;
-
-    //     emit MintRequested(newMintParams.requester, newRequestId);
-
-    //     delete mintRequests[requestId];
-    // }
 }

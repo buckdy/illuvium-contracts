@@ -60,6 +60,20 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
     }
 
     /**
+     * @notice Mint single NFT.
+     * @param to NFT receipient address.
+     */
+    function mintSingle(
+        address to,
+        BoxType _boxType,
+        uint8 _tier
+    ) external override {
+        require(msg.sender == minter, "This is not minter");
+
+        _mint(to, _boxType, _tier);
+    }
+
+    /**
      * @notice Mint mulitple NFTs.
      * @dev set proper amount value to avoid gas overflow.
      * @param to NFT receipient address.

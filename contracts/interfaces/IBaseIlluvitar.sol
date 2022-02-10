@@ -23,4 +23,10 @@ interface IBaseIlluvitar {
         BoxType[] calldata boxTypes,
         uint8[] calldata _tiers
     ) external;
+
+    function mintSingle(
+        address to,
+        BoxType _boxType,
+        uint8 _tier
+    ) external;
 }
