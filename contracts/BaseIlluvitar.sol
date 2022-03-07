@@ -20,14 +20,13 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
      */
     event MinterUpdated(address indexed minter);
 
-    uint256 internal constant DECIMALS = 100;
-
     // NFT Minter Address.
     address public minter;
     // LastToken ID that already minted.
     uint256 public lastTokenId;
     mapping(uint256 => BoxType) public boxTypes;
     mapping(uint256 => uint8) public tiers;
+    string internal __baseUri;
 
     /**
      * @notice Initialize Base Illuvitar.
@@ -60,8 +59,24 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
     }
 
     /**
+     * @notice Set base URI
+     * @dev only owner can call this function.
+     * @param _baseUri_ base URI.
+     */
+    function setBaseUri(string memory _baseUri_) external onlyOwner {
+        __baseUri = _baseUri_;
+    }
+
+    /**
+     * @notice Return _baseURI - this is used to make tokenURI
+     */
+    function _baseURI() internal view override returns (string memory) {
+        return __baseUri;
+    }
+
+    /**
      * @notice Mint single NFT.
-     * @param to NFT receipient address.
+     * @param to NFT recipient address.
      */
     function mintSingle(
         address to,
@@ -76,8 +91,10 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
     /**
      * @notice Mint mulitple NFTs.
      * @dev set proper amount value to avoid gas overflow.
-     * @param to NFT receipient address.
+     * @param to NFT recipient address.
      * @param amount Amount of tokens.
+     * @param _boxTypes boxTypes of Illuvitars to mint
+     * @param _tiers Tiers of Illuvitars to mint
      */
     function mintMultiple(
         address to,
@@ -96,7 +113,9 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
     /**
      * @notice Safely mint.
      * @dev inaccessible from outside.
-     * @param to NFT receipient address.
+     * @param to NFT recipient address.
+     * @param boxType boxType to mint
+     * @param tier Tier to mint
      */
     function _mint(
         address to,

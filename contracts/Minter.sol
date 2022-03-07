@@ -34,7 +34,7 @@ contract Minter is VRFConsumerBase, Ownable {
      * @param requester requester address.
      * @param requestId requestId number.
      */
-    event MintRequested(address indexed requester, bytes32 requestId);
+    event MintRequested(address indexed requester, bytes32 requestId, MintRequest mintRequest);
 
     //Purchase Body struct
     struct PortraitLayerMintParams {
@@ -382,8 +382,6 @@ contract Minter is VRFConsumerBase, Ownable {
         MintRequest storage mintRequest = mintRequests[requestId];
         mintRequest.requester = _msgSender();
 
-        emit MintRequested(_msgSender(), requestId);
-
         uint256 length = portraitLayerMintParams.length;
         for (uint256 i = 0; i < length; i += 1) {
             etherPrice +=
@@ -418,5 +416,7 @@ contract Minter is VRFConsumerBase, Ownable {
             require(tokenAmount > 0, "Invalid price");
             IERC20(paymentToken).safeTransferFrom(_msgSender(), treasury, tokenAmount);
         }
+
+        emit MintRequested(_msgSender(), requestId, mintRequests[requestId]);
     }
 }

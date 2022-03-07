@@ -14,7 +14,7 @@ interface IBaseIlluvitar {
     /**
      * @notice call this function if required to mint multiple NFTs.
      * @dev set proper amount value to avoid gas overflow.
-     * @param to NFT receipient address
+     * @param to NFT recipient address
      * @param amount amount of tokens
      */
     function mintMultiple(

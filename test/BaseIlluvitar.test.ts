@@ -57,6 +57,20 @@ describe("BaseIlluvitar", () => {
     });
   });
 
+  describe("setBaseUri", () => {
+    it("Revert if not owner", async () => {
+      await expect(accessoryLayer.connect(alice).setBaseUri("https://illuvium.io/")).to.revertedWith(
+        "Ownable: caller is not the owner",
+      );
+    });
+
+    it("set baseUri by owner", async () => {
+      await accessoryLayer.connect(owner).setBaseUri("https://illuvium.io/");
+      await accessoryLayer.connect(minter).mintMultiple(await bob.getAddress(), 1, [BoxType.Diamond], [4]);
+      expect(await accessoryLayer.tokenURI("1")).to.be.equal("https://illuvium.io/1");
+    });
+  });
+
   describe("mintMultiple", () => {
     const boxTypes = [BoxType.Diamond, BoxType.Bronze, BoxType.Platinum];
     const tiers = [4, 2, 3];
