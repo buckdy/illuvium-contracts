@@ -127,4 +127,19 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
         boxTypes[lastTokenId] = boxType;
         tiers[lastTokenId] = tier;
     }
+
+    function mintFor(
+        address to,
+        uint256 quantity,
+        bytes calldata mintingBlob
+    ) external override {
+        require(msg.sender == minter, "This is not minter");
+
+        BoxType[] memory _boxTypes = new BoxType[](quantity);
+        uint8[] memory _tiers = new uint8[](quantity);
+
+        for (uint256 i = 0; i < quantity; i += 1) {
+            _mint(to, _boxTypes[i], _tiers[i]);
+        }
+    }
 }

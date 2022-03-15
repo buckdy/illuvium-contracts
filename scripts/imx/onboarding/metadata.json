@@ -1,0 +1,11 @@
+[
+  {
+    "name": "name",
+    "type": "text"
+  },
+  {
+    "name": "tier",
+    "type": "enum",
+    "filterable": true
+  }
+]

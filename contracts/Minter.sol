@@ -27,6 +27,7 @@ contract Minter is VRFConsumerBase, Ownable {
     event PortraitLayerTierChancesSet(IBaseIlluvitar.BoxType indexed type_, uint16[] tierChances);
     event AccessoryLayerTierChancesSet(IBaseIlluvitar.BoxType indexed type_, uint16[] tierChances);
     event OracleRegistrySet(address indexed oracleRegistry);
+    event RequestFulfilled(bytes32 indexed requestId, uint256 randomNumber);
 
     /**
      * @notice event emitted random accessory requested.
@@ -268,92 +269,94 @@ contract Minter is VRFConsumerBase, Ownable {
      * @param randomNumber Random Number.
      */
     function fulfillRandomness(bytes32 requestId, uint256 randomNumber) internal override {
-        MintRequest storage mintRequest = mintRequests[requestId];
+        emit RequestFulfilled(requestId, randomNumber);
 
-        address requestor = mintRequest.requester;
+        // MintRequest storage mintRequest = mintRequests[requestId];
 
-        uint256 seed = randomNumber;
-        uint16 chance;
+        // address requestor = mintRequest.requester;
 
-        uint256 portraitLayerMintLength = mintRequest.portraitLayerMintParams.length;
+        // uint256 seed = randomNumber;
+        // uint16 chance;
 
-        for (uint256 i = 0; i < portraitLayerMintLength; i += 1) {
-            IBaseIlluvitar.BoxType boxType = mintRequest.portraitLayerMintParams[i].boxType;
+        // uint256 portraitLayerMintLength = mintRequest.portraitLayerMintParams.length;
 
-            uint16[] memory tierChances = portraitLayerTierChances[boxType];
-            uint256 tierLength = tierChances.length;
+        // for (uint256 i = 0; i < portraitLayerMintLength; i += 1) {
+        //     IBaseIlluvitar.BoxType boxType = mintRequest.portraitLayerMintParams[i].boxType;
 
-            uint256 amount = mintRequest.portraitLayerMintParams[i].amount;
-            for (uint256 j = 0; j < amount; j += 1) {
-                (chance, seed) = _getRandChance(seed);
-                uint8 selectedTier;
+        //     uint16[] memory tierChances = portraitLayerTierChances[boxType];
+        //     uint256 tierLength = tierChances.length;
 
-                for (uint8 tier = 0; tier < tierLength; tier += 1) {
-                    if (tierChances[tier] >= chance) {
-                        selectedTier = tier;
-                        break;
-                    }
-                }
+        //     uint256 amount = mintRequest.portraitLayerMintParams[i].amount;
+        //     for (uint256 j = 0; j < amount; j += 1) {
+        //         (chance, seed) = _getRandChance(seed);
+        //         uint8 selectedTier;
 
-                portraitLayerIlluvitar.mintSingle(requestor, boxType, selectedTier);
-            }
-        }
+        //         for (uint8 tier = 0; tier < tierLength; tier += 1) {
+        //             if (tierChances[tier] >= chance) {
+        //                 selectedTier = tier;
+        //                 break;
+        //             }
+        //         }
 
-        uint256 accessorySemiRandomMintLength = mintRequest.accessorySemiRandomMintParams.length;
+        //         portraitLayerIlluvitar.mintSingle(requestor, boxType, selectedTier);
+        //     }
+        // }
 
-        for (uint256 i = 0; i < accessorySemiRandomMintLength; i += 1) {
-            IBaseIlluvitar.BoxType boxType = mintRequest.accessorySemiRandomMintParams[i].boxType;
-            IBaseIlluvitar accessoryLayer = accessoryIlluvitars[
-                mintRequest.accessorySemiRandomMintParams[i].accessoryType
-            ];
+        // uint256 accessorySemiRandomMintLength = mintRequest.accessorySemiRandomMintParams.length;
 
-            uint16[] memory tierChances = accessoryLayerTierChances[boxType];
-            uint256 tierLength = tierChances.length;
+        // for (uint256 i = 0; i < accessorySemiRandomMintLength; i += 1) {
+        //     IBaseIlluvitar.BoxType boxType = mintRequest.accessorySemiRandomMintParams[i].boxType;
+        //     IBaseIlluvitar accessoryLayer = accessoryIlluvitars[
+        //         mintRequest.accessorySemiRandomMintParams[i].accessoryType
+        //     ];
 
-            uint256 amount = mintRequest.accessorySemiRandomMintParams[i].amount;
-            for (uint256 j = 0; j < amount; j += 1) {
-                (chance, seed) = _getRandChance(seed);
-                uint8 selectedTier;
+        //     uint16[] memory tierChances = accessoryLayerTierChances[boxType];
+        //     uint256 tierLength = tierChances.length;
 
-                for (uint8 tier = 0; tier < tierLength; tier += 1) {
-                    if (tierChances[tier] >= chance) {
-                        selectedTier = tier;
-                        break;
-                    }
-                }
+        //     uint256 amount = mintRequest.accessorySemiRandomMintParams[i].amount;
+        //     for (uint256 j = 0; j < amount; j += 1) {
+        //         (chance, seed) = _getRandChance(seed);
+        //         uint8 selectedTier;
 
-                accessoryLayer.mintSingle(requestor, boxType, selectedTier);
-            }
-        }
+        //         for (uint8 tier = 0; tier < tierLength; tier += 1) {
+        //             if (tierChances[tier] >= chance) {
+        //                 selectedTier = tier;
+        //                 break;
+        //             }
+        //         }
 
-        uint256 accessoryFullRandomMintLength = mintRequest.accessoryFullRandomMintParams.length;
+        //         accessoryLayer.mintSingle(requestor, boxType, selectedTier);
+        //     }
+        // }
 
-        for (uint256 i = 0; i < accessoryFullRandomMintLength; i += 1) {
-            IBaseIlluvitar.BoxType boxType = mintRequest.accessoryFullRandomMintParams[i].boxType;
+        // uint256 accessoryFullRandomMintLength = mintRequest.accessoryFullRandomMintParams.length;
 
-            uint16[] memory tierChances = accessoryLayerTierChances[boxType];
-            uint256 tierLength = tierChances.length;
+        // for (uint256 i = 0; i < accessoryFullRandomMintLength; i += 1) {
+        //     IBaseIlluvitar.BoxType boxType = mintRequest.accessoryFullRandomMintParams[i].boxType;
 
-            uint256 amount = mintRequest.accessoryFullRandomMintParams[i].amount;
-            for (uint256 j = 0; j < amount; j += 1) {
-                (chance, seed) = _getRandChance(seed);
-                IAccessoryLayer.AccessoryType accessoryType = IAccessoryLayer.AccessoryType(
-                    uint8(seed % ACCESSORY_TYPE_COUNT)
-                );
-                uint8 selectedTier;
+        //     uint16[] memory tierChances = accessoryLayerTierChances[boxType];
+        //     uint256 tierLength = tierChances.length;
 
-                for (uint8 tier = 0; tier < tierLength; tier += 1) {
-                    if (tierChances[tier] >= chance) {
-                        selectedTier = tier;
-                        break;
-                    }
-                }
+        //     uint256 amount = mintRequest.accessoryFullRandomMintParams[i].amount;
+        //     for (uint256 j = 0; j < amount; j += 1) {
+        //         (chance, seed) = _getRandChance(seed);
+        //         IAccessoryLayer.AccessoryType accessoryType = IAccessoryLayer.AccessoryType(
+        //             uint8(seed % ACCESSORY_TYPE_COUNT)
+        //         );
+        //         uint8 selectedTier;
 
-                accessoryIlluvitars[accessoryType].mintSingle(requestor, boxType, selectedTier);
-            }
-        }
+        //         for (uint8 tier = 0; tier < tierLength; tier += 1) {
+        //             if (tierChances[tier] >= chance) {
+        //                 selectedTier = tier;
+        //                 break;
+        //             }
+        //         }
 
-        delete mintRequests[requestId];
+        //         accessoryIlluvitars[accessoryType].mintSingle(requestor, boxType, selectedTier);
+        //     }
+        // }
+
+        // delete mintRequests[requestId];
     }
 
     function _getRandChance(uint256 seed) private pure returns (uint16, uint256) {
@@ -418,5 +421,9 @@ contract Minter is VRFConsumerBase, Ownable {
         }
 
         emit MintRequested(_msgSender(), requestId, mintRequests[requestId]);
+    }
+
+    function getMintRequest(bytes32 requestId) external view returns (MintRequest memory) {
+        return mintRequests[requestId];
     }
 }

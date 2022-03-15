@@ -1,8 +1,11 @@
 import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
+import "@nomiclabs/hardhat-etherscan";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "@openzeppelin/hardhat-upgrades";
+import "hardhat-dependency-compiler";
+import "hardhat-deploy";
 
 // import "./tasks/deploy";
 
@@ -107,6 +110,21 @@ const config: HardhatUserConfig = {
   typechain: {
     outDir: "typechain",
     target: "ethers-v5",
+  },
+  namedAccounts: {
+    deployer: {
+      default: 0,
+      1: 0,
+    },
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
+  dependencyCompiler: {
+    paths: [
+      "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
+      "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol",
+    ],
   },
 };
 

@@ -29,4 +29,13 @@ interface IBaseIlluvitar {
         BoxType _boxType,
         uint8 _tier
     ) external;
+
+    /**
+     * @notice Used to mint L1 NFT by IMX
+     */
+    function mintFor(
+        address to,
+        uint256 quantity,
+        bytes calldata mintingBlob
+    ) external;
 }
