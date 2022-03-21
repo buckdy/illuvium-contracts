@@ -15,5 +15,5 @@ interface IAccessoryLayer {
         Props
     }
 
-    function layerType() external view returns (AccessoryType);
+    function accessoryTypes(uint256 tokenId) external view returns (AccessoryType);
 }

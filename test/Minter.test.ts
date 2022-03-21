@@ -1,27 +1,19 @@
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
-import { Contract, Signer, constants, utils } from "ethers";
-import { generateRandomAddress, AccessoryType, BoxType } from "./utils";
-
-enum Accessory {
-  EYE = 0,
-  BODY = 1,
-  MOUTH = 2,
-  HEAD = 3,
-}
+import { Contract, constants, utils } from "ethers";
+import { AccessoryLayer, PortraitLayer, Minter } from "../typechain";
+import { generateRandomAddress, BoxType } from "./utils";
 
 describe("Minter", () => {
-  let owner: Signer;
-  let alice: Signer;
-  let minter: Signer;
+  let owner: SignerWithAddress;
+  let alice: SignerWithAddress;
+  let minter: SignerWithAddress;
   let vrfCoordinator: Contract;
   let linkToken: Contract;
-  let minterContract: Contract;
-  let portraitLayer: Contract;
-  let eyeLayer: Contract;
-  let bodyLayer: Contract;
-  let mouthLayer: Contract;
-  let headLayer: Contract;
+  let minterContract: Minter;
+  let portraitLayer: PortraitLayer;
+  let accessoryLayer: AccessoryLayer;
 
   const keyHash = "0x6c3699283bda56ad74f6b855546325b68d482e983852a7a82979cc4807b641f4";
   const fee = utils.parseEther("0.0001");
@@ -38,19 +30,17 @@ describe("Minter", () => {
     const PortraitLayerFactory = await ethers.getContractFactory("PortraitLayer");
     const MinterFactory = await ethers.getContractFactory("Minter");
 
-    eyeLayer = await upgrades.deployProxy(AccessoryLayerFactory, ["Eye", "EYE", await minter.getAddress()]);
-    bodyLayer = await upgrades.deployProxy(AccessoryLayerFactory, ["Body", "BODY", await minter.getAddress()]);
-    mouthLayer = await upgrades.deployProxy(AccessoryLayerFactory, ["Mouth", "MOUTH", await minter.getAddress()]);
-    headLayer = await upgrades.deployProxy(AccessoryLayerFactory, ["Head", "HEAD", await minter.getAddress()]);
-    portraitLayer = await upgrades.deployProxy(PortraitLayerFactory, [
+    accessoryLayer = (await upgrades.deployProxy(AccessoryLayerFactory, [
+      "Eye",
+      "EYE",
+      await minter.getAddress(),
+    ])) as AccessoryLayer;
+    portraitLayer = (await upgrades.deployProxy(PortraitLayerFactory, [
       "Base",
       "BASE",
       await minter.getAddress(),
-      eyeLayer.address,
-      bodyLayer.address,
-      mouthLayer.address,
-      headLayer.address,
-    ]);
+      accessoryLayer.address,
+    ])) as PortraitLayer;
 
     linkToken = await LinkTokenFactory.deploy();
     vrfCoordinator = await VRFCoordinatorMockFactory.deploy(linkToken.address);
@@ -60,20 +50,13 @@ describe("Minter", () => {
       keyHash,
       fee,
       portraitLayer.address,
-      eyeLayer.address,
-      bodyLayer.address,
-      mouthLayer.address,
-      headLayer.address,
       treasury,
       weth,
       oracleRegistry,
     );
 
     await portraitLayer.setMinter(minterContract.address);
-    await eyeLayer.setMinter(minterContract.address);
-    await bodyLayer.setMinter(minterContract.address);
-    await mouthLayer.setMinter(minterContract.address);
-    await headLayer.setMinter(minterContract.address);
+    await accessoryLayer.setMinter(minterContract.address);
     await linkToken.transfer(minterContract.address, 10 ** 15);
   });
 
@@ -88,10 +71,6 @@ describe("Minter", () => {
           keyHash,
           fee,
           constants.AddressZero,
-          eyeLayer.address,
-          bodyLayer.address,
-          mouthLayer.address,
-          headLayer.address,
           treasury,
           weth,
           oracleRegistry,
@@ -105,78 +84,6 @@ describe("Minter", () => {
           keyHash,
           fee,
           portraitLayer.address,
-          constants.AddressZero,
-          bodyLayer.address,
-          mouthLayer.address,
-          headLayer.address,
-          treasury,
-          weth,
-          oracleRegistry,
-        ),
-      ).to.revertedWith("cannot zero address");
-
-      await expect(
-        MinterFactory.deploy(
-          vrfCoordinator.address,
-          linkToken.address,
-          keyHash,
-          fee,
-          portraitLayer.address,
-          eyeLayer.address,
-          constants.AddressZero,
-          mouthLayer.address,
-          headLayer.address,
-          treasury,
-          weth,
-          oracleRegistry,
-        ),
-      ).to.revertedWith("cannot zero address");
-
-      await expect(
-        MinterFactory.deploy(
-          vrfCoordinator.address,
-          linkToken.address,
-          keyHash,
-          fee,
-          portraitLayer.address,
-          eyeLayer.address,
-          bodyLayer.address,
-          constants.AddressZero,
-          headLayer.address,
-          treasury,
-          weth,
-          oracleRegistry,
-        ),
-      ).to.revertedWith("cannot zero address");
-
-      await expect(
-        MinterFactory.deploy(
-          vrfCoordinator.address,
-          linkToken.address,
-          keyHash,
-          fee,
-          portraitLayer.address,
-          eyeLayer.address,
-          bodyLayer.address,
-          mouthLayer.address,
-          constants.AddressZero,
-          treasury,
-          weth,
-          oracleRegistry,
-        ),
-      ).to.revertedWith("cannot zero address");
-
-      await expect(
-        MinterFactory.deploy(
-          vrfCoordinator.address,
-          linkToken.address,
-          keyHash,
-          fee,
-          portraitLayer.address,
-          eyeLayer.address,
-          bodyLayer.address,
-          mouthLayer.address,
-          headLayer.address,
           constants.AddressZero,
           weth,
           oracleRegistry,
@@ -207,46 +114,69 @@ describe("Minter", () => {
     });
   });
 
-  describe("setPortraitLayerPricePerTier", () => {
+  describe("setPortraitLayerPrice", () => {
+    const price = utils.parseEther("0.2");
+
     it("Revert if caller is not owner", async () => {
-      await expect(minterContract.connect(alice).setPortraitLayerPricePerTier(0, fee)).to.revertedWith(
+      await expect(minterContract.connect(alice).setPortraitLayerPrice([BoxType.Diamond], [price])).to.revertedWith(
         "Ownable: caller is not the owner",
       );
     });
 
-    it("Revert if tier not exist", async () => {
-      await expect(minterContract.setPortraitLayerPricePerTier(6, fee)).to.revertedWith("only exist 6 tiers");
+    it("Revert if length is invalid", async () => {
+      await expect(minterContract.setPortraitLayerPrice([], [])).to.revertedWith("Invalid length");
+      await expect(minterContract.setPortraitLayerPrice([BoxType.Diamond, 1], [price])).to.revertedWith(
+        "Invalid length",
+      );
     });
 
-    it("should set tier price", async () => {
-      await minterContract.setPortraitLayerPricePerTier(0, fee);
-      expect(await minterContract.portraitLayerPricePerTier(0)).to.equal(fee);
+    it("set portrait price", async () => {
+      await minterContract.setPortraitLayerPrice([BoxType.Diamond], [price]);
+      expect(await minterContract.portraitLayerPrices(BoxType.Diamond)).to.equal(price);
     });
   });
 
-  describe("setAccessoryPrice", () => {
+  describe("setAccessoryLayerFullRandomPrice", () => {
+    const price = utils.parseEther("0.2");
+
     it("Revert if caller is not owner", async () => {
-      await expect(minterContract.connect(alice).setAccessoryPrice(Accessory.EYE, fee)).to.revertedWith(
-        "Ownable: caller is not the owner",
+      await expect(
+        minterContract.connect(alice).setAccessoryLayerFullRandomPrice([BoxType.Diamond], [price]),
+      ).to.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("Revert if length is invalid", async () => {
+      await expect(minterContract.setAccessoryLayerFullRandomPrice([], [])).to.revertedWith("Invalid length");
+      await expect(minterContract.setAccessoryLayerFullRandomPrice([BoxType.Diamond, 1], [price])).to.revertedWith(
+        "Invalid length",
       );
     });
 
-    it("should set accessory price", async () => {
-      await minterContract.setAccessoryPrice(Accessory.EYE, fee);
-      expect(await minterContract.accessoryPrice(Accessory.EYE)).to.equal(fee);
+    it("set portrait price", async () => {
+      await minterContract.setAccessoryLayerFullRandomPrice([BoxType.Diamond], [price]);
+      expect(await minterContract.accessoryLayerFullRandomPrices(BoxType.Diamond)).to.equal(price);
     });
   });
 
-  describe("setAccessoryRandomPrice", () => {
+  describe("setAccessoryLayerSemiRandomPrices", () => {
+    const price = utils.parseEther("0.2");
+
     it("Revert if caller is not owner", async () => {
-      await expect(minterContract.connect(alice).setAccessoryRandomPrice(fee)).to.revertedWith(
-        "Ownable: caller is not the owner",
+      await expect(
+        minterContract.connect(alice).setAccessoryLayerSemiRandomPrices([BoxType.Diamond], [price]),
+      ).to.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("Revert if length is invalid", async () => {
+      await expect(minterContract.setAccessoryLayerSemiRandomPrices([], [])).to.revertedWith("Invalid length");
+      await expect(minterContract.setAccessoryLayerSemiRandomPrices([BoxType.Diamond, 1], [price])).to.revertedWith(
+        "Invalid length",
       );
     });
 
-    it("should set accessory random price", async () => {
-      await minterContract.setAccessoryRandomPrice(fee);
-      expect(await minterContract.accessoryRandomPrice()).to.equal(fee);
+    it("set portrait price", async () => {
+      await minterContract.setAccessoryLayerSemiRandomPrices([BoxType.Diamond], [price]);
+      expect(await minterContract.accessoryLayerSemiRandomPrices(BoxType.Diamond)).to.equal(price);
     });
   });
 
@@ -261,31 +191,6 @@ describe("Minter", () => {
       expect(await minterContract.oracleRegistry()).to.equal(oracleRegistry);
       await minterContract.setOracleRegistry(treasury);
       expect(await minterContract.oracleRegistry()).to.equal(treasury);
-    });
-  });
-
-  describe("purchase + fulfillRandomness", () => {
-    it("should mint random based and delete requester", async () => {
-      await minterContract.setPortraitLayerPricePerTier(Accessory.EYE, fee);
-      await minterContract.setAccessoryPrice(Accessory.EYE, fee);
-      await minterContract.setAccessoryRandomPrice(fee);
-      const portraitLayerMintParams = [[Accessory.EYE, 1]];
-      const accessoryMintParams = [[Accessory.EYE, 1]];
-      const tx = await minterContract
-        .connect(alice)
-        .purchase(portraitLayerMintParams, accessoryMintParams, 1, constants.AddressZero, { value: fee.mul(3) });
-      const receipt = await tx.wait();
-      const requestId = receipt.events[5].data;
-      await expect(tx)
-        .emit(minterContract, "RandomAccessoryRequested")
-        .withArgs(await alice.getAddress(), requestId);
-      expect((await minterContract.randomAccessoryRequester(requestId))[0]).to.equal(await alice.getAddress());
-      expect(await eyeLayer.balanceOf(await alice.getAddress())).to.equal(1);
-      await vrfCoordinator.callBackWithRandomness(requestId, "256", minterContract.address);
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      expect(await eyeLayer.balanceOf(await alice.getAddress())).to.equal(2);
-      expect((await minterContract.randomAccessoryRequester(requestId))[0]).to.equal(constants.AddressZero);
     });
   });
 });

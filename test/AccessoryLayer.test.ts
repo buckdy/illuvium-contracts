@@ -1,34 +1,49 @@
 import { expect } from "chai";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, upgrades } from "hardhat";
-import { Contract, Signer } from "ethers";
-import { AccessoryType } from "./utils";
+import { utils } from "ethers";
+import { AccessoryLayer } from "../typechain";
+import { AccessoryType, BoxType } from "./utils";
 
 describe("AccessoryLayer", () => {
-  let accounts: Signer[];
-  let accessoryLayer: Contract;
-  let minter: Signer;
-  const name: string = "Illuvitar Body";
-  const symbol: string = "ILV-Body";
-  const accessoryType: AccessoryType = AccessoryType.Body;
+  let accessoryLayer: AccessoryLayer;
+  let alice: SignerWithAddress;
+  let minter: SignerWithAddress;
+  const NAME: string = "Illuvitar Accessory Layer";
+  const SYMBOL: string = "ILVA";
 
   beforeEach(async () => {
-    accounts = await ethers.getSigners();
-    [minter] = accounts;
+    const accounts = await ethers.getSigners();
+    [alice, minter] = accounts;
     const AccessoryLayerFactory = await ethers.getContractFactory("AccessoryLayer");
-    accessoryLayer = await upgrades.deployProxy(AccessoryLayerFactory, [
-      name,
-      symbol,
-      await minter.getAddress(),
-      accessoryType,
-    ]);
+    accessoryLayer = (await upgrades.deployProxy(AccessoryLayerFactory, [
+      NAME,
+      SYMBOL,
+      minter.address,
+    ])) as AccessoryLayer;
   });
 
-  describe("initializer", () => {
-    it("check initialized data", async () => {
-      expect(await accessoryLayer.name()).to.equal(name);
-      expect(await accessoryLayer.symbol()).to.equal(symbol);
-      expect(await accessoryLayer.minter()).to.equal(await minter.getAddress());
-      expect(await accessoryLayer.layerType()).to.equal(accessoryType);
+  describe("mint", () => {
+    it("reverts if msg.sender is not minter", async () => {
+      const data = utils.defaultAbiCoder.encode(
+        ["uint8", "uint8", "uint8"],
+        [BoxType.Diamond, 2, AccessoryType.EyeWear],
+      );
+
+      await expect(accessoryLayer.connect(alice).mint(alice.address, data)).to.revertedWith("This is not minter");
+    });
+
+    it("mint with metadata", async () => {
+      const data = utils.defaultAbiCoder.encode(
+        ["uint8", "uint8", "uint8"],
+        [BoxType.Diamond, 2, AccessoryType.EyeWear],
+      );
+      await accessoryLayer.connect(minter).mint(alice.address, data);
+      const metadata = await accessoryLayer.metadata(1);
+
+      expect(metadata.boxType).to.equal(BoxType.Diamond);
+      expect(metadata.tier).to.equal(2);
+      expect(await accessoryLayer.accessoryTypes(1)).to.equal(AccessoryType.EyeWear);
     });
   });
 });

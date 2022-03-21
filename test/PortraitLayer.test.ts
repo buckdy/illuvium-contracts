@@ -1,84 +1,86 @@
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
-import { Contract, Signer } from "ethers";
+import { utils } from "ethers";
+import { AccessoryLayer, PortraitLayer } from "../typechain";
 import { AccessoryType, BoxType } from "./utils";
 
 describe("PortraitLayer", () => {
-  let accounts: Signer[];
-  let portraitLayer: Contract;
-  let owner: Signer;
-  let alice: Signer;
-  let minter: Signer;
-  let accessories: Contract[];
-  const name: string = "Illuvitar Portrait";
-  const symbol: string = "ILV-PORT";
+  let portraitLayer: PortraitLayer;
+  let owner: SignerWithAddress;
+  let alice: SignerWithAddress;
+  let minter: SignerWithAddress;
+  let accessoryLayer: AccessoryLayer;
+  const NAME: string = "Illuvitar Portrait";
+  const SYMBOL: string = "ILV-PORT";
 
   beforeEach(async () => {
-    accounts = await ethers.getSigners();
+    const accounts = await ethers.getSigners();
     [owner, alice, minter] = accounts;
     const AccessoryLayerFactory = await ethers.getContractFactory("AccessoryLayer");
     const PortraitLayerFactory = await ethers.getContractFactory("PortraitLayer");
 
-    accessories = [];
-    for (let i = 0; AccessoryType.Skin, i <= AccessoryType.Props; i += 1) {
-      accessories.push(await upgrades.deployProxy(AccessoryLayerFactory, [name, symbol, await minter.getAddress(), i]));
+    accessoryLayer = (await upgrades.deployProxy(AccessoryLayerFactory, [
+      "Illuvitar Accessory",
+      "ILV-ACC",
+      minter.address,
+    ])) as AccessoryLayer;
 
-      await accessories[i]
-        .connect(minter)
-        .mintMultiple(await alice.getAddress(), 2, [BoxType.Bronze, BoxType.Gold], [0, 3]);
-    }
-    portraitLayer = await upgrades.deployProxy(PortraitLayerFactory, [
-      name,
-      symbol,
-      await minter.getAddress(),
-      accessories.map(item => item.address),
-    ]);
-
-    await portraitLayer
-      .connect(minter)
-      .mintMultiple(await alice.getAddress(), 2, [BoxType.Diamond, BoxType.Platinum], [0, 3]);
-
-    for (let i = 0; AccessoryType.Skin, i <= AccessoryType.Props; i += 1) {
-      await accessories[i].connect(alice).approve(portraitLayer.address, 1);
-      await accessories[i].connect(alice).approve(portraitLayer.address, 2);
-    }
+    portraitLayer = (await upgrades.deployProxy(PortraitLayerFactory, [
+      NAME,
+      SYMBOL,
+      minter.address,
+      accessoryLayer.address,
+    ])) as PortraitLayer;
   });
 
   describe("initializer", () => {
-    it("check NFT data", async () => {
-      expect(await portraitLayer.name()).to.equal(name);
-      expect(await portraitLayer.symbol()).to.equal(symbol);
-    });
-
-    it("check minter", async () => {
-      expect(await portraitLayer.minter()).to.equal(await minter.getAddress());
-    });
-
-    it("check accessories", async () => {
-      for (let i = 0; AccessoryType.Skin, i <= AccessoryType.Props; i += 1) {
-        expect(await portraitLayer.accessoryIlluvitars(i)).to.equal(accessories[i].address);
-      }
+    it("check initial data", async () => {
+      expect(await portraitLayer.accessoryLayer()).to.equal(accessoryLayer.address);
     });
   });
 
   describe("combine", () => {
     const tokenId = 1;
 
-    it("Revert if types and accessoryIds length mismatch", async () => {
-      await expect(portraitLayer.combine(tokenId, [], [])).to.revertedWith("Invalid length");
-      await expect(portraitLayer.combine(tokenId, [AccessoryType.EyeWear], [])).to.revertedWith("Invalid length");
+    beforeEach(async () => {
+      let data = utils.defaultAbiCoder.encode(["uint8", "uint8"], [BoxType.Diamond, 2]);
+      await portraitLayer.connect(minter).mint(alice.address, data);
+
+      data = utils.defaultAbiCoder.encode(["uint8", "uint8", "uint8"], [BoxType.Diamond, 2, AccessoryType.Body]);
+      await accessoryLayer.connect(minter).mint(alice.address, data);
+
+      data = utils.defaultAbiCoder.encode(["uint8", "uint8", "uint8"], [BoxType.Diamond, 2, AccessoryType.EyeWear]);
+      await accessoryLayer.connect(minter).mint(alice.address, data);
+
+      await accessoryLayer.connect(alice).approve(portraitLayer.address, 1);
+      await accessoryLayer.connect(alice).approve(portraitLayer.address, 2);
     });
 
-    it("Revert if not nft owner", async () => {
-      await expect(portraitLayer.connect(owner).combine(tokenId, [AccessoryType.EyeWear], [1])).to.revertedWith(
+    it("Revert if accessoryIds length is zero", async () => {
+      await expect(portraitLayer.combine(tokenId, [])).to.revertedWith("Invalid length");
+    });
+
+    it("Revert if not portrait owner", async () => {
+      const data = utils.defaultAbiCoder.encode(["uint8", "uint8", "uint8"], [BoxType.Diamond, 2, AccessoryType.Body]);
+      await accessoryLayer.connect(minter).mint(owner.address, data);
+
+      await accessoryLayer.connect(owner).approve(portraitLayer.address, 3);
+
+      await expect(portraitLayer.connect(owner).combine(tokenId, [3])).to.revertedWith("Not portrait layer owner");
+    });
+
+    it("Revert if not accessory owner", async () => {
+      const data = utils.defaultAbiCoder.encode(["uint8", "uint8"], [BoxType.Diamond, 2]);
+      await portraitLayer.connect(minter).mint(owner.address, data);
+
+      await expect(portraitLayer.connect(owner).combine(2, [1])).to.revertedWith(
         "ERC721: transfer of token that is not own",
       );
     });
 
     it("should combine", async () => {
-      const tx = await portraitLayer
-        .connect(alice)
-        .combine(tokenId, [AccessoryType.EyeWear, AccessoryType.Body], [2, 1]);
+      const tx = await portraitLayer.connect(alice).combine(tokenId, [2, 1]);
       await expect(tx).to.emit(portraitLayer, "Combined").withArgs(tokenId, AccessoryType.EyeWear, 2);
       await expect(tx).to.emit(portraitLayer, "Combined").withArgs(tokenId, AccessoryType.Body, 1);
       expect(await portraitLayer.accessories(tokenId, AccessoryType.EyeWear)).to.be.equal(2);
@@ -86,11 +88,29 @@ describe("PortraitLayer", () => {
     });
 
     it("Revert if already combined", async () => {
-      await portraitLayer.connect(alice).combine(tokenId, [AccessoryType.EyeWear, AccessoryType.Body], [1, 1]);
+      const data = utils.defaultAbiCoder.encode(["uint8", "uint8", "uint8"], [BoxType.Diamond, 2, AccessoryType.Body]);
+      await accessoryLayer.connect(minter).mint(alice.address, data);
 
-      await expect(portraitLayer.connect(alice).combine(tokenId, [AccessoryType.EyeWear], [2])).to.revertedWith(
-        "Already combined",
-      );
+      await portraitLayer.connect(alice).combine(tokenId, [1]);
+
+      await expect(portraitLayer.connect(alice).combine(tokenId, [3])).to.revertedWith("Already combined");
+    });
+  });
+
+  describe("mint", () => {
+    it("reverts if msg.sender is not minter", async () => {
+      const data = utils.defaultAbiCoder.encode(["uint8", "uint8"], [BoxType.Diamond, 2]);
+
+      await expect(portraitLayer.connect(alice).mint(alice.address, data)).to.revertedWith("This is not minter");
+    });
+
+    it("mint with metadata", async () => {
+      const data = utils.defaultAbiCoder.encode(["uint8", "uint8"], [BoxType.Diamond, 2]);
+      await portraitLayer.connect(minter).mint(alice.address, data);
+      const metadata = await portraitLayer.metadata(1);
+
+      expect(metadata.boxType).to.equal(BoxType.Diamond);
+      expect(metadata.tier).to.equal(2);
     });
   });
 });

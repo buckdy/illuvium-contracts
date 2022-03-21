@@ -8,5 +8,5 @@ import "./IAccessoryLayer.sol";
  */
 
 interface IPortraitLayer {
-    function accessoryIlluvitars(IAccessoryLayer.AccessoryType) external view returns (address);
+    function accessoryLayer() external view returns (address);
 }

@@ -25,59 +25,47 @@ contract PortraitLayer is IPortraitLayer, BaseIlluvitar, ERC721HolderUpgradeable
 
     // Combined accessories
     mapping(uint256 => mapping(IAccessoryLayer.AccessoryType => uint256)) public accessories;
-    // Illuvitar accessory address mapping
-    mapping(IAccessoryLayer.AccessoryType => address) public override accessoryIlluvitars;
-    // Indicates accessory illuvatar
-    mapping(address => bool) public isAccessoryIlluvitar;
+    // Illuvitar accessory layer address
+    address public override accessoryLayer;
 
     /**
      * @notice Initialize Base Layer.
      * @param name_ NFT Name.
      * @param symbol_ NFT Symbol.
      * @param _minter NFT Minter Address.
-     * @param _accessories List of accessory items.
+     * @param _accessoryLayer Accessory layer address
      */
     function initialize(
         string memory name_,
         string memory symbol_,
         address _minter,
-        address[] calldata _accessories
+        address _accessoryLayer
     ) external initializer {
         __BaseIlluvitar_init(name_, symbol_, _minter);
         __ERC721Holder_init();
 
-        uint256 accessoryTypeCounts = 5;
-        require(_accessories.length == accessoryTypeCounts, "invalid length");
-        for (uint256 i = 0; i < accessoryTypeCounts; i += 1) {
-            IAccessoryLayer.AccessoryType type_ = IAccessoryLayer(_accessories[i]).layerType();
-            require(address(accessoryIlluvitars[type_]) == address(0), "already set");
-            accessoryIlluvitars[type_] = _accessories[i];
-            isAccessoryIlluvitar[_accessories[i]] = true;
-        }
+        accessoryLayer = _accessoryLayer;
     }
 
     /**
      * @notice Combine list of accessory pairs (tokenId, type) onto tokenId of base layer.
      * @param tokenId Base Layer tokenId.
-     * @param types List of accessory type.
      * @param accessoryIds Accessory tokenIds.
      */
-    function combine(
-        uint256 tokenId,
-        IAccessoryLayer.AccessoryType[] calldata types,
-        uint256[] calldata accessoryIds
-    ) external {
-        require(types.length > 0 && types.length == accessoryIds.length, "Invalid length");
+    function combine(uint256 tokenId, uint256[] calldata accessoryIds) external {
+        require(accessoryIds.length > 0, "Invalid length");
 
-        for (uint256 i = 0; i < types.length; i += 1) {
-            require(accessories[tokenId][types[i]] == 0, "Already combined");
-            IERC721Upgradeable(accessoryIlluvitars[types[i]]).safeTransferFrom(
-                msg.sender,
-                address(this),
+        require(ownerOf(tokenId) == msg.sender, "Not portrait layer owner");
+
+        uint256 length = accessoryIds.length;
+        for (uint256 i = 0; i < length; i += 1) {
+            IAccessoryLayer.AccessoryType accessoryType = IAccessoryLayer(accessoryLayer).accessoryTypes(
                 accessoryIds[i]
             );
-            accessories[tokenId][types[i]] = accessoryIds[i];
-            emit Combined(tokenId, types[i], accessoryIds[i]);
+            require(accessories[tokenId][accessoryType] == 0, "Already combined");
+            IERC721Upgradeable(accessoryLayer).safeTransferFrom(msg.sender, address(this), accessoryIds[i]);
+            accessories[tokenId][accessoryType] = accessoryIds[i];
+            emit Combined(tokenId, accessoryType, accessoryIds[i]);
         }
     }
 
@@ -90,7 +78,14 @@ contract PortraitLayer is IPortraitLayer, BaseIlluvitar, ERC721HolderUpgradeable
         uint256,
         bytes calldata
     ) public override returns (bytes4) {
-        require(isAccessoryIlluvitar[_msgSender()], "Not accessory");
+        require(accessoryLayer == _msgSender(), "Not accessory");
         return this.onERC721Received.selector;
+    }
+
+    function _mint(address to, bytes calldata _data) internal override {
+        lastTokenId += 1;
+        _safeMint(to, lastTokenId);
+        (BoxType boxType, uint8 tier) = abi.decode(_data, (BoxType, uint8));
+        metadata[lastTokenId] = IlluvitarMetadata({ boxType: boxType, tier: tier });
     }
 }

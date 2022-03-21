@@ -20,12 +20,16 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
      */
     event MinterUpdated(address indexed minter);
 
+    struct IlluvitarMetadata {
+        BoxType boxType;
+        uint8 tier;
+    }
+
     // NFT Minter Address.
     address public minter;
     // LastToken ID that already minted.
     uint256 public lastTokenId;
-    mapping(uint256 => BoxType) public boxTypes;
-    mapping(uint256 => uint8) public tiers;
+    mapping(uint256 => IlluvitarMetadata) public metadata;
     string internal __baseUri;
 
     /**
@@ -43,6 +47,7 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
         __ERC721Enumerable_init();
         __Ownable_init();
 
+        require(_minter != address(0), "Minter cannot zero");
         minter = _minter;
     }
 
@@ -77,56 +82,21 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
     /**
      * @notice Mint single NFT.
      * @param to NFT recipient address.
+     * @param data mint data
      */
-    function mintSingle(
-        address to,
-        BoxType _boxType,
-        uint8 _tier
-    ) external override {
+    function mint(address to, bytes calldata data) external override {
         require(msg.sender == minter, "This is not minter");
 
-        _mint(to, _boxType, _tier);
-    }
-
-    /**
-     * @notice Mint mulitple NFTs.
-     * @dev set proper amount value to avoid gas overflow.
-     * @param to NFT recipient address.
-     * @param amount Amount of tokens.
-     * @param _boxTypes boxTypes of Illuvitars to mint
-     * @param _tiers Tiers of Illuvitars to mint
-     */
-    function mintMultiple(
-        address to,
-        uint256 amount,
-        BoxType[] calldata _boxTypes,
-        uint8[] calldata _tiers
-    ) external override {
-        require(msg.sender == minter, "This is not minter");
-        require(amount > 0 && _boxTypes.length == amount && _tiers.length == amount, "Invalid length");
-
-        for (uint256 i = 0; i < amount; i += 1) {
-            _mint(to, _boxTypes[i], _tiers[i]);
-        }
+        _mint(to, data);
     }
 
     /**
      * @notice Safely mint.
      * @dev inaccessible from outside.
      * @param to NFT recipient address.
-     * @param boxType boxType to mint
-     * @param tier Tier to mint
+     * @param _data mint data
      */
-    function _mint(
-        address to,
-        BoxType boxType,
-        uint8 tier
-    ) private {
-        lastTokenId += 1;
-        _safeMint(to, lastTokenId);
-        boxTypes[lastTokenId] = boxType;
-        tiers[lastTokenId] = tier;
-    }
+    function _mint(address to, bytes calldata _data) internal virtual;
 
     function mintFor(
         address to,
@@ -134,12 +104,5 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
         bytes calldata mintingBlob
     ) external override {
         require(msg.sender == minter, "This is not minter");
-
-        BoxType[] memory _boxTypes = new BoxType[](quantity);
-        uint8[] memory _tiers = new uint8[](quantity);
-
-        for (uint256 i = 0; i < quantity; i += 1) {
-            _mint(to, _boxTypes[i], _tiers[i]);
-        }
     }
 }

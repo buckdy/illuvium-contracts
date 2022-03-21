@@ -11,7 +11,7 @@ import "./interfaces/IAccessoryLayer.sol";
  */
 
 contract AccessoryLayer is BaseIlluvitar, IAccessoryLayer {
-    AccessoryType public override layerType;
+    mapping(uint256 => AccessoryType) public override accessoryTypes;
 
     /**
      * @notice Initialize Accessory NFT.
@@ -22,10 +22,16 @@ contract AccessoryLayer is BaseIlluvitar, IAccessoryLayer {
     function initialize(
         string memory name_,
         string memory symbol_,
-        address _minter,
-        AccessoryType type_
+        address _minter
     ) external initializer {
         __BaseIlluvitar_init(name_, symbol_, _minter);
-        layerType = type_;
+    }
+
+    function _mint(address to, bytes calldata _data) internal override {
+        lastTokenId += 1;
+        _safeMint(to, lastTokenId);
+        (BoxType boxType, uint8 tier, AccessoryType accessoryType) = abi.decode(_data, (BoxType, uint8, AccessoryType));
+        metadata[lastTokenId] = IlluvitarMetadata({ boxType: boxType, tier: tier });
+        accessoryTypes[lastTokenId] = accessoryType;
     }
 }
