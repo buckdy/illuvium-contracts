@@ -11,8 +11,6 @@ interface IBaseIlluvitar {
         Diamond
     }
 
-    function mint(address to, bytes calldata data) external;
-
     /**
      * @notice Used to mint L1 NFT by IMX
      */

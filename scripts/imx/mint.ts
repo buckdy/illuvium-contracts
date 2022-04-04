@@ -13,12 +13,20 @@ async function main() {
 
   const minter = await getMinterContract(NETWORK);
 
-  minter.on("RequestFulfilled", async (requestId, randomNumber) => {
-    const mintParams = await minter.getMintRequest(requestId);
-    console.log(
-      await mintL2(client, config.collection.contract_address, mintParams.requester.toLowerCase(), "1", "0x"),
-    );
-  });
+  await mintL2(
+    client,
+    config.collection.contract_address,
+    "0xA4e47B38415201d4c8aB42711892A31C7B06bdE9".toLowerCase(),
+    "1",
+    "0",
+  );
+
+  // minter.on("RequestFulfilled", async (requestId, randomNumber) => {
+  //   const mintParams = await minter.getMintRequest(requestId);
+  //   console.log(
+  //     await mintL2(client, config.collection.contract_address, mintParams.requester.toLowerCase(), "1", "0x"),
+  //   );
+  // });
 }
 
 // We recommend this pattern to be able to use async/await everywhere

@@ -20,6 +20,13 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
      */
     event MinterUpdated(address indexed minter);
 
+    /**
+     * @notice event emitted when base URI is set.
+     * @dev emitted in {setBaseUri} function.
+     * @param baseUri new base uri.
+     */
+    event BaseUriUpdated(string baseUri);
+
     struct IlluvitarMetadata {
         BoxType boxType;
         uint8 tier;
@@ -70,6 +77,8 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
      */
     function setBaseUri(string memory _baseUri_) external onlyOwner {
         __baseUri = _baseUri_;
+
+        emit BaseUriUpdated(_baseUri_);
     }
 
     /**
@@ -77,17 +86,6 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
      */
     function _baseURI() internal view override returns (string memory) {
         return __baseUri;
-    }
-
-    /**
-     * @notice Mint single NFT.
-     * @param to NFT recipient address.
-     * @param data mint data
-     */
-    function mint(address to, bytes calldata data) external override {
-        require(msg.sender == minter, "This is not minter");
-
-        _mint(to, data);
     }
 
     /**
@@ -103,6 +101,8 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
         uint256 quantity,
         bytes calldata mintingBlob
     ) external override {
-        require(msg.sender == minter, "This is not minter");
+        require(quantity == 1, "Amount must be 1");
+        require(msg.sender == minter, "caller is not minter");
+        _mint(to, mintingBlob);
     }
 }

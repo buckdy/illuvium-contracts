@@ -24,8 +24,6 @@ contract Minter is VRFConsumerBase, Ownable {
     event PortraitLayerPriceSet(IBaseIlluvitar.BoxType indexed type_, uint256 price);
     event AccessoryLayerFullRandomPriceSet(IBaseIlluvitar.BoxType indexed type_, uint256 price);
     event AccessoryLayerSemiRandomPriceSet(IBaseIlluvitar.BoxType indexed type_, uint256 price);
-    event PortraitLayerTierChancesSet(IBaseIlluvitar.BoxType indexed type_, uint16[] tierChances);
-    event AccessoryLayerTierChancesSet(IBaseIlluvitar.BoxType indexed type_, uint16[] tierChances);
     event OracleRegistrySet(address indexed oracleRegistry);
     event RequestFulfilled(bytes32 indexed requestId, uint256 randomNumber);
 
@@ -69,13 +67,8 @@ contract Minter is VRFConsumerBase, Ownable {
     mapping(IBaseIlluvitar.BoxType => uint256) public portraitLayerPrices;
     mapping(IBaseIlluvitar.BoxType => uint256) public accessoryLayerSemiRandomPrices;
     mapping(IBaseIlluvitar.BoxType => uint256) public accessoryLayerFullRandomPrices;
-    mapping(IBaseIlluvitar.BoxType => uint16[]) public portraitLayerTierChances;
-    mapping(IBaseIlluvitar.BoxType => uint16[]) public accessoryLayerTierChances;
 
     mapping(bytes32 => MintRequest) public mintRequests;
-
-    IBaseIlluvitar public immutable accessoryLayerIlluvitar;
-    IBaseIlluvitar public immutable portraitLayerIlluvitar;
 
     address public treasury;
     address public weth;
@@ -89,7 +82,6 @@ contract Minter is VRFConsumerBase, Ownable {
      * @param _linkToken LINK token address.
      * @param _vrfKeyhash Key Hash.
      * @param _vrfFee Fee.
-     * @param _portraitLayerAddr Body accessory item.
      * @param _treasury Treasury Address.
      * @param _weth WETH Address.
      * @param _oracleRegistry IlluviumOracleRegistry Address.
@@ -99,18 +91,14 @@ contract Minter is VRFConsumerBase, Ownable {
         address _linkToken,
         bytes32 _vrfKeyhash,
         uint256 _vrfFee,
-        address _portraitLayerAddr,
         address _treasury,
         address _weth,
         address _oracleRegistry
     ) VRFConsumerBase(_vrfCoordinator, _linkToken) {
-        require(address(_portraitLayerAddr) != address(0), "cannot zero address");
         require(_treasury != address(0), "cannot zero address");
 
         vrfKeyHash = _vrfKeyhash;
         vrfFee = _vrfFee;
-        portraitLayerIlluvitar = IBaseIlluvitar(_portraitLayerAddr);
-        accessoryLayerIlluvitar = IBaseIlluvitar(IPortraitLayer(_portraitLayerAddr).accessoryLayer());
 
         emit TreasurySet(_treasury);
         treasury = _treasury;
@@ -181,68 +169,6 @@ contract Minter is VRFConsumerBase, Ownable {
         for (uint256 i = 0; i < boxTypes.length; i += 1) {
             accessoryLayerSemiRandomPrices[boxTypes[i]] = prices[i];
             emit AccessoryLayerSemiRandomPriceSet(boxTypes[i], prices[i]);
-        }
-    }
-
-    /**
-     * @notice Set portrait layer tier chances for each box type
-     * @dev only owner can call this function.
-     * @param boxTypes list of box types
-     * @param tierChances list of tier chances
-     */
-    function setPortraitLayerTierChances(IBaseIlluvitar.BoxType[] calldata boxTypes, uint16[][] calldata tierChances)
-        external
-        onlyOwner
-    {
-        require(boxTypes.length > 0 && boxTypes.length == tierChances.length, "Invalid length");
-
-        for (uint256 i = 0; i < boxTypes.length; i += 1) {
-            require(tierChances[i].length == MAX_TIER + 1, "Invalid tier chance length");
-
-            uint16[] storage currentTierChances = portraitLayerTierChances[boxTypes[i]];
-
-            if (currentTierChances.length == 0) {
-                for (uint256 j = 0; j <= MAX_TIER; j += 1) {
-                    currentTierChances.push(tierChances[i][j]);
-                }
-            } else {
-                for (uint256 j = 0; j <= MAX_TIER; j += 1) {
-                    currentTierChances[j] = tierChances[i][j];
-                }
-            }
-
-            emit PortraitLayerTierChancesSet(boxTypes[i], tierChances[i]);
-        }
-    }
-
-    /**
-     * @notice Set accessory layer tier chances for each box type
-     * @dev only owner can call this function.
-     * @param boxTypes list of box types
-     * @param tierChances list of tier chances
-     */
-    function setAccessoryLayerTierChances(IBaseIlluvitar.BoxType[] calldata boxTypes, uint16[][] calldata tierChances)
-        external
-        onlyOwner
-    {
-        require(boxTypes.length > 0 && boxTypes.length == tierChances.length, "Invalid length");
-
-        for (uint256 i = 0; i < boxTypes.length; i += 1) {
-            require(tierChances[i].length == MAX_TIER + 1, "Invalid tier chance length");
-
-            uint16[] storage currentTierChances = accessoryLayerTierChances[boxTypes[i]];
-
-            if (currentTierChances.length == 0) {
-                for (uint256 j = 0; j <= MAX_TIER; j += 1) {
-                    currentTierChances.push(tierChances[i][j]);
-                }
-            } else {
-                for (uint256 j = 0; j <= MAX_TIER; j += 1) {
-                    currentTierChances[j] = tierChances[i][j];
-                }
-            }
-
-            emit AccessoryLayerTierChancesSet(boxTypes[i], tierChances[i]);
         }
     }
 
@@ -335,5 +261,10 @@ contract Minter is VRFConsumerBase, Ownable {
 
     function getMintRequest(bytes32 requestId) external view returns (MintRequest memory) {
         return mintRequests[requestId];
+    }
+
+    function fulfillMintRequest(bytes32 requestId) external onlyOwner {
+        require(mintRequests[requestId].requester != address(0), "Request does not exist!");
+        delete mintRequests[requestId];
     }
 }

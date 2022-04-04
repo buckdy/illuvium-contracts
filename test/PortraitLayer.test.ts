@@ -45,13 +45,13 @@ describe("PortraitLayer", () => {
 
     beforeEach(async () => {
       let data = utils.defaultAbiCoder.encode(["uint8", "uint8"], [BoxType.Diamond, 2]);
-      await portraitLayer.connect(minter).mint(alice.address, data);
+      await portraitLayer.connect(minter).mintFor(alice.address, 1, data);
 
       data = utils.defaultAbiCoder.encode(["uint8", "uint8", "uint8"], [BoxType.Diamond, 2, AccessoryType.Body]);
-      await accessoryLayer.connect(minter).mint(alice.address, data);
+      await accessoryLayer.connect(minter).mintFor(alice.address, 1, data);
 
       data = utils.defaultAbiCoder.encode(["uint8", "uint8", "uint8"], [BoxType.Diamond, 2, AccessoryType.EyeWear]);
-      await accessoryLayer.connect(minter).mint(alice.address, data);
+      await accessoryLayer.connect(minter).mintFor(alice.address, 1, data);
 
       await accessoryLayer.connect(alice).approve(portraitLayer.address, 1);
       await accessoryLayer.connect(alice).approve(portraitLayer.address, 2);
@@ -63,7 +63,7 @@ describe("PortraitLayer", () => {
 
     it("Revert if not portrait owner", async () => {
       const data = utils.defaultAbiCoder.encode(["uint8", "uint8", "uint8"], [BoxType.Diamond, 2, AccessoryType.Body]);
-      await accessoryLayer.connect(minter).mint(owner.address, data);
+      await accessoryLayer.connect(minter).mintFor(owner.address, 1, data);
 
       await accessoryLayer.connect(owner).approve(portraitLayer.address, 3);
 
@@ -72,7 +72,7 @@ describe("PortraitLayer", () => {
 
     it("Revert if not accessory owner", async () => {
       const data = utils.defaultAbiCoder.encode(["uint8", "uint8"], [BoxType.Diamond, 2]);
-      await portraitLayer.connect(minter).mint(owner.address, data);
+      await portraitLayer.connect(minter).mintFor(owner.address, 1, data);
 
       await expect(portraitLayer.connect(owner).combine(2, [1])).to.revertedWith(
         "ERC721: transfer of token that is not own",
@@ -89,7 +89,7 @@ describe("PortraitLayer", () => {
 
     it("Revert if already combined", async () => {
       const data = utils.defaultAbiCoder.encode(["uint8", "uint8", "uint8"], [BoxType.Diamond, 2, AccessoryType.Body]);
-      await accessoryLayer.connect(minter).mint(alice.address, data);
+      await accessoryLayer.connect(minter).mintFor(alice.address, 1, data);
 
       await portraitLayer.connect(alice).combine(tokenId, [1]);
 
@@ -98,15 +98,9 @@ describe("PortraitLayer", () => {
   });
 
   describe("mint", () => {
-    it("reverts if msg.sender is not minter", async () => {
-      const data = utils.defaultAbiCoder.encode(["uint8", "uint8"], [BoxType.Diamond, 2]);
-
-      await expect(portraitLayer.connect(alice).mint(alice.address, data)).to.revertedWith("This is not minter");
-    });
-
     it("mint with metadata", async () => {
       const data = utils.defaultAbiCoder.encode(["uint8", "uint8"], [BoxType.Diamond, 2]);
-      await portraitLayer.connect(minter).mint(alice.address, data);
+      await portraitLayer.connect(minter).mintFor(alice.address, 1, data);
       const metadata = await portraitLayer.metadata(1);
 
       expect(metadata.boxType).to.equal(BoxType.Diamond);

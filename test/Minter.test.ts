@@ -1,19 +1,16 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { ethers, upgrades } from "hardhat";
+import { ethers } from "hardhat";
 import { Contract, constants, utils } from "ethers";
-import { AccessoryLayer, PortraitLayer, Minter } from "../typechain";
+import { Minter } from "../typechain";
 import { generateRandomAddress, BoxType } from "./utils";
 
 describe("Minter", () => {
   let owner: SignerWithAddress;
   let alice: SignerWithAddress;
-  let minter: SignerWithAddress;
   let vrfCoordinator: Contract;
   let linkToken: Contract;
   let minterContract: Minter;
-  let portraitLayer: PortraitLayer;
-  let accessoryLayer: AccessoryLayer;
 
   const keyHash = "0x6c3699283bda56ad74f6b855546325b68d482e983852a7a82979cc4807b641f4";
   const fee = utils.parseEther("0.0001");
@@ -23,24 +20,10 @@ describe("Minter", () => {
   const oracleRegistry = generateRandomAddress();
 
   beforeEach(async () => {
-    [owner, alice, minter] = await ethers.getSigners();
+    [owner, alice] = await ethers.getSigners();
     const LinkTokenFactory = await ethers.getContractFactory("LinkToken");
     const VRFCoordinatorMockFactory = await ethers.getContractFactory("VRFCoordinatorMock");
-    const AccessoryLayerFactory = await ethers.getContractFactory("AccessoryLayer");
-    const PortraitLayerFactory = await ethers.getContractFactory("PortraitLayer");
     const MinterFactory = await ethers.getContractFactory("Minter");
-
-    accessoryLayer = (await upgrades.deployProxy(AccessoryLayerFactory, [
-      "Eye",
-      "EYE",
-      await minter.getAddress(),
-    ])) as AccessoryLayer;
-    portraitLayer = (await upgrades.deployProxy(PortraitLayerFactory, [
-      "Base",
-      "BASE",
-      await minter.getAddress(),
-      accessoryLayer.address,
-    ])) as PortraitLayer;
 
     linkToken = await LinkTokenFactory.deploy();
     vrfCoordinator = await VRFCoordinatorMockFactory.deploy(linkToken.address);
@@ -49,14 +32,11 @@ describe("Minter", () => {
       linkToken.address,
       keyHash,
       fee,
-      portraitLayer.address,
       treasury,
       weth,
       oracleRegistry,
     );
 
-    await portraitLayer.setMinter(minterContract.address);
-    await accessoryLayer.setMinter(minterContract.address);
     await linkToken.transfer(minterContract.address, 10 ** 15);
   });
 
@@ -70,20 +50,6 @@ describe("Minter", () => {
           linkToken.address,
           keyHash,
           fee,
-          constants.AddressZero,
-          treasury,
-          weth,
-          oracleRegistry,
-        ),
-      ).to.revertedWith("cannot zero address");
-
-      await expect(
-        MinterFactory.deploy(
-          vrfCoordinator.address,
-          linkToken.address,
-          keyHash,
-          fee,
-          portraitLayer.address,
           constants.AddressZero,
           weth,
           oracleRegistry,
@@ -109,8 +75,9 @@ describe("Minter", () => {
 
     it("should set treasury", async () => {
       expect(await minterContract.treasury()).to.equal(treasury);
-      await minterContract.connect(owner).setTreasury(portraitLayer.address);
-      expect(await minterContract.treasury()).to.equal(portraitLayer.address);
+      const newTreasury = "0xA4e47B38415201d4c8aB42711892A31C7B06bdE9";
+      await minterContract.connect(owner).setTreasury(newTreasury);
+      expect(await minterContract.treasury()).to.equal(newTreasury);
     });
   });
 

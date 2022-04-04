@@ -24,21 +24,12 @@ describe("AccessoryLayer", () => {
   });
 
   describe("mint", () => {
-    it("reverts if msg.sender is not minter", async () => {
-      const data = utils.defaultAbiCoder.encode(
-        ["uint8", "uint8", "uint8"],
-        [BoxType.Diamond, 2, AccessoryType.EyeWear],
-      );
-
-      await expect(accessoryLayer.connect(alice).mint(alice.address, data)).to.revertedWith("This is not minter");
-    });
-
     it("mint with metadata", async () => {
       const data = utils.defaultAbiCoder.encode(
         ["uint8", "uint8", "uint8"],
         [BoxType.Diamond, 2, AccessoryType.EyeWear],
       );
-      await accessoryLayer.connect(minter).mint(alice.address, data);
+      await accessoryLayer.connect(minter).mintFor(alice.address, 1, data);
       const metadata = await accessoryLayer.metadata(1);
 
       expect(metadata.boxType).to.equal(BoxType.Diamond);
