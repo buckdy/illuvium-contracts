@@ -195,12 +195,6 @@ contract Minter is VRFConsumerBase, Ownable {
         // Mint will be done on Layer2
     }
 
-    function _getRandChance(uint256 seed) private pure returns (uint16, uint256) {
-        uint256 rand = uint256(keccak256(abi.encodePacked(seed, seed)));
-        uint16 chance = uint16(rand % 10000);
-        return (chance, rand / 10000);
-    }
-
     /**
      * @notice Mint for Base and Accesory items. Users will send ETH or sILV to mint itmes
      * @param portraitLayerMintParams portrait layer mint params.

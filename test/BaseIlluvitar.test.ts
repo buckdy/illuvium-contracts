@@ -32,24 +32,6 @@ describe("BaseIlluvitar", () => {
     });
   });
 
-  describe("setMinter", () => {
-    it("Revert if not owner", async () => {
-      await expect(baseIlluvitar.connect(alice).setMinter(alice.address)).to.revertedWith(
-        "Ownable: caller is not the owner",
-      );
-    });
-
-    it("Revert if minter is zero", async () => {
-      await expect(baseIlluvitar.connect(owner).setMinter(constants.AddressZero)).to.revertedWith("Minter cannot zero");
-    });
-
-    it("set minter by owner", async () => {
-      const tx = await baseIlluvitar.connect(owner).setMinter(alice.address);
-      expect(await baseIlluvitar.connect(owner).minter()).to.equal(alice.address);
-      await expect(tx).to.emit(baseIlluvitar, "MinterUpdated").withArgs(alice.address);
-    });
-  });
-
   describe("setBaseUri", () => {
     it("Revert if not owner", async () => {
       await expect(baseIlluvitar.connect(alice).setBaseUri("https://illuvium.io/")).to.revertedWith(

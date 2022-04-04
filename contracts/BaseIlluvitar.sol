@@ -14,13 +14,6 @@ import "./interfaces/IBaseIlluvitar.sol";
 
 abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeable, IBaseIlluvitar {
     /**
-     * @notice event emitted when new minter is set.
-     * @dev emitted in {setMinter} function.
-     * @param minter new minter address.
-     */
-    event MinterUpdated(address indexed minter);
-
-    /**
      * @notice event emitted when base URI is set.
      * @dev emitted in {setBaseUri} function.
      * @param baseUri new base uri.
@@ -56,18 +49,6 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
 
         require(_minter != address(0), "Minter cannot zero");
         minter = _minter;
-    }
-
-    /**
-     * @notice Set minter address.
-     * @dev only owner can call this function.
-     * @param minter_ New minter address.
-     */
-    function setMinter(address minter_) external onlyOwner {
-        require(minter_ != address(0), "Minter cannot zero");
-        minter = minter_;
-
-        emit MinterUpdated(minter_);
     }
 
     /**
