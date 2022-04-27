@@ -21,9 +21,6 @@ contract Minter is VRFConsumerBase, Ownable {
     using SafeERC20 for IERC20;
 
     event TreasurySet(address indexed treasury);
-    event PortraitLayerPriceSet(IBaseIlluvitar.BoxType indexed type_, uint256 price);
-    event AccessoryLayerFullRandomPriceSet(IBaseIlluvitar.BoxType indexed type_, uint256 price);
-    event AccessoryLayerSemiRandomPriceSet(IBaseIlluvitar.BoxType indexed type_, uint256 price);
     event OracleRegistrySet(address indexed oracleRegistry);
     event RequestFulfilled(bytes32 indexed requestId, uint256 randomNumber);
 
@@ -36,19 +33,19 @@ contract Minter is VRFConsumerBase, Ownable {
     event MintRequested(address indexed requester, bytes32 requestId, MintRequest mintRequest);
 
     //Purchase Body struct
-    struct PortraitLayerMintParams {
+    struct PortraitMintParams {
         IBaseIlluvitar.BoxType boxType;
         uint64 amount;
     }
 
     //Purchase Accessory struct
-    struct AccessoryLayerSemiRandomMintParams {
+    struct AccessorySemiRandomMintParams {
         IAccessoryLayer.AccessoryType accessoryType;
         IBaseIlluvitar.BoxType boxType;
         uint64 amount;
     }
 
-    struct AccessoryLayerFullRandomMintParams {
+    struct AccessoryFullRandomMintParams {
         IBaseIlluvitar.BoxType boxType;
         uint64 amount;
     }
@@ -56,17 +53,41 @@ contract Minter is VRFConsumerBase, Ownable {
     //Purchase RandomAccessory struct
     struct MintRequest {
         address requester;
-        PortraitLayerMintParams[] portraitLayerMintParams;
-        AccessoryLayerSemiRandomMintParams[] accessorySemiRandomMintParams;
-        AccessoryLayerFullRandomMintParams[] accessoryFullRandomMintParams;
+        PortraitMintParams[] portraitMintParams;
+        AccessorySemiRandomMintParams[] accessorySemiRandomMintParams;
+        AccessoryFullRandomMintParams[] accessoryFullRandomMintParams;
+        uint256 randomNumber;
+    }
+
+    struct PortraitInfo {
+        IBaseIlluvitar.BoxType boxType;
+        uint8 tier;
+        uint256 rand;
+    }
+
+    struct AccessoryInfo {
+        IBaseIlluvitar.BoxType boxType;
+        IAccessoryLayer.AccessoryType accessoryType;
+        uint8 tier;
+    }
+
+    struct PortraitMintInfo {
+        uint256 price;
+        uint16[6] tierChances;
+    }
+
+    struct AccessoryMintInfo {
+        uint256 randomPrice;
+        uint256 semiRandomPrice;
+        uint16[6] tierChances;
     }
 
     address private constant ETHER_ADDRESS = address(0x0000000000000000000000000000000000000000);
-    uint256 public constant MAX_TIER = 5;
+    uint16 public constant MAX_TIER_CHANCE = 10000;
+    uint8 public constant TIER_COUNT = 6;
 
-    mapping(IBaseIlluvitar.BoxType => uint256) public portraitLayerPrices;
-    mapping(IBaseIlluvitar.BoxType => uint256) public accessoryLayerSemiRandomPrices;
-    mapping(IBaseIlluvitar.BoxType => uint256) public accessoryLayerFullRandomPrices;
+    mapping(IBaseIlluvitar.BoxType => PortraitMintInfo) public portraitMintInfo;
+    mapping(IBaseIlluvitar.BoxType => AccessoryMintInfo) public accessoryMintInfo;
 
     mapping(bytes32 => MintRequest) public mintRequests;
 
@@ -104,6 +125,9 @@ contract Minter is VRFConsumerBase, Ownable {
         treasury = _treasury;
         weth = _weth;
         oracleRegistry = _oracleRegistry;
+
+        _initializePortraitMintInfo();
+        _initializeAccessoryMintInfo();
     }
 
     /**
@@ -116,60 +140,6 @@ contract Minter is VRFConsumerBase, Ownable {
         treasury = treasury_;
 
         emit TreasurySet(treasury_);
-    }
-
-    /**
-     * @notice Set portraitLayer prices for each box type.
-     * @dev only owner can call this function.
-     * @param boxTypes list of box types
-     * @param prices list of prices
-     */
-    function setPortraitLayerPrice(IBaseIlluvitar.BoxType[] calldata boxTypes, uint256[] calldata prices)
-        external
-        onlyOwner
-    {
-        require(boxTypes.length > 0 && boxTypes.length == prices.length, "Invalid length");
-
-        for (uint256 i = 0; i < boxTypes.length; i += 1) {
-            portraitLayerPrices[boxTypes[i]] = prices[i];
-            emit PortraitLayerPriceSet(boxTypes[i], prices[i]);
-        }
-    }
-
-    /**
-     * @notice Set accessoryLayer full random prices for each box type.
-     * @dev only owner can call this function.
-     * @param boxTypes list of box types
-     * @param prices list of prices
-     */
-    function setAccessoryLayerFullRandomPrice(IBaseIlluvitar.BoxType[] calldata boxTypes, uint256[] calldata prices)
-        external
-        onlyOwner
-    {
-        require(boxTypes.length > 0 && boxTypes.length == prices.length, "Invalid length");
-
-        for (uint256 i = 0; i < boxTypes.length; i += 1) {
-            accessoryLayerFullRandomPrices[boxTypes[i]] = prices[i];
-            emit AccessoryLayerFullRandomPriceSet(boxTypes[i], prices[i]);
-        }
-    }
-
-    /**
-     * @notice Set accessoryLayer semi random prices for each box type.
-     * @dev only owner can call this function.
-     * @param boxTypes list of box types
-     * @param prices list of prices
-     */
-    function setAccessoryLayerSemiRandomPrices(IBaseIlluvitar.BoxType[] calldata boxTypes, uint256[] calldata prices)
-        external
-        onlyOwner
-    {
-        require(boxTypes.length > 0 && boxTypes.length == prices.length, "Invalid length");
-
-        for (uint256 i = 0; i < boxTypes.length; i += 1) {
-            accessoryLayerSemiRandomPrices[boxTypes[i]] = prices[i];
-            emit AccessoryLayerSemiRandomPriceSet(boxTypes[i], prices[i]);
-        }
     }
 
     /**
@@ -190,22 +160,25 @@ contract Minter is VRFConsumerBase, Ownable {
      * @param randomNumber Random Number.
      */
     function fulfillRandomness(bytes32 requestId, uint256 randomNumber) internal override {
-        emit RequestFulfilled(requestId, randomNumber);
+        require(mintRequests[requestId].requester != address(0), "No request exist");
+        require(mintRequests[requestId].randomNumber == 0, "Random number already fulfilled");
 
-        // Mint will be done on Layer2
+        mintRequests[requestId].randomNumber = randomNumber;
+
+        emit RequestFulfilled(requestId, randomNumber);
     }
 
     /**
-     * @notice Mint for Base and Accesory items. Users will send ETH or sILV to mint itmes
-     * @param portraitLayerMintParams portrait layer mint params.
+     * @notice Mint for Portrait and Accesory items. Users will send ETH or sILV to mint itmes
+     * @param portraitMintParams portrait layer mint params.
      * @param accessorySemiRandomMintParams accessory layer semi random mint params.
      * @param accessoryFullRandomMintParams accessory layer full random mint params.
      * @param paymentToken payment token address.
      */
     function purchase(
-        PortraitLayerMintParams[] calldata portraitLayerMintParams,
-        AccessoryLayerSemiRandomMintParams[] calldata accessorySemiRandomMintParams,
-        AccessoryLayerFullRandomMintParams[] calldata accessoryFullRandomMintParams,
+        PortraitMintParams[] calldata portraitMintParams,
+        AccessorySemiRandomMintParams[] calldata accessorySemiRandomMintParams,
+        AccessoryFullRandomMintParams[] calldata accessoryFullRandomMintParams,
         address paymentToken
     ) external payable {
         uint256 etherPrice;
@@ -213,30 +186,30 @@ contract Minter is VRFConsumerBase, Ownable {
         bytes32 requestId = requestRandomness(vrfKeyHash, vrfFee);
 
         MintRequest storage mintRequest = mintRequests[requestId];
+        require(mintRequest.requester == address(0), "Already requested");
         mintRequest.requester = _msgSender();
 
-        uint256 length = portraitLayerMintParams.length;
+        uint256 length = portraitMintParams.length;
         for (uint256 i = 0; i < length; i += 1) {
-            etherPrice +=
-                uint256(portraitLayerMintParams[i].amount) *
-                portraitLayerPrices[portraitLayerMintParams[i].boxType];
-            mintRequest.portraitLayerMintParams.push(portraitLayerMintParams[i]);
+            PortraitMintParams memory param = portraitMintParams[i];
+            require(param.amount > 0, "Invalid amount");
+            etherPrice += uint256(param.amount) * portraitMintInfo[param.boxType].price;
+            mintRequest.portraitMintParams.push(param);
         }
 
         length = accessorySemiRandomMintParams.length;
         for (uint256 i = 0; i < length; i += 1) {
-            etherPrice +=
-                uint256(accessorySemiRandomMintParams[i].amount) *
-                accessoryLayerSemiRandomPrices[accessorySemiRandomMintParams[i].boxType];
-            mintRequest.accessorySemiRandomMintParams.push(accessorySemiRandomMintParams[i]);
+            AccessorySemiRandomMintParams memory param = accessorySemiRandomMintParams[i];
+            require(param.amount > 0, "Invalid amount");
+            etherPrice += uint256(param.amount) * accessoryMintInfo[param.boxType].semiRandomPrice;
+            mintRequest.accessorySemiRandomMintParams.push(param);
         }
 
         length = accessoryFullRandomMintParams.length;
         for (uint256 i = 0; i < length; i += 1) {
-            etherPrice +=
-                uint256(accessoryFullRandomMintParams[i].amount) *
-                accessoryLayerFullRandomPrices[accessoryFullRandomMintParams[i].boxType];
-            mintRequest.accessoryFullRandomMintParams.push(accessoryFullRandomMintParams[i]);
+            AccessoryFullRandomMintParams memory param = accessoryFullRandomMintParams[i];
+            etherPrice += uint256(param.amount) * accessoryMintInfo[param.boxType].randomPrice;
+            mintRequest.accessoryFullRandomMintParams.push(param);
         }
 
         if (paymentToken == ETHER_ADDRESS) {
@@ -253,12 +226,203 @@ contract Minter is VRFConsumerBase, Ownable {
         emit MintRequested(_msgSender(), requestId, mintRequests[requestId]);
     }
 
-    function getMintRequest(bytes32 requestId) external view returns (MintRequest memory) {
-        return mintRequests[requestId];
+    function getMintResult(bytes32 requestId)
+        external
+        view
+        returns (
+            address requestor,
+            uint256 seed,
+            PortraitInfo[] memory portraits,
+            AccessoryInfo[] memory accessories
+        )
+    {
+        require(mintRequests[requestId].randomNumber != 0, "No random number generated");
+        MintRequest memory mintRequest = mintRequests[requestId];
+        requestor = mintRequest.requester;
+        seed = mintRequest.randomNumber;
+
+        uint256 rand = seed;
+        if (mintRequest.portraitMintParams.length > 0) {
+            (portraits, rand) = _getPortraitsInfo(rand, mintRequest.portraitMintParams);
+        }
+
+        if (
+            mintRequest.accessoryFullRandomMintParams.length > 0 || mintRequest.accessorySemiRandomMintParams.length > 0
+        ) {
+            accessories = _getAccessoriesInfo(
+                rand,
+                mintRequest.accessoryFullRandomMintParams,
+                mintRequest.accessorySemiRandomMintParams
+            );
+        }
+    }
+
+    function _getPortraitsInfo(uint256 seed, PortraitMintParams[] memory portraitMintParams)
+        internal
+        view
+        returns (PortraitInfo[] memory portraits, uint256 lastRand)
+    {
+        uint256 portraitAmount;
+
+        uint256 length = portraitMintParams.length;
+        for (uint256 i = 0; i < length; i += 1) {
+            portraitAmount += portraitMintParams[i].amount;
+        }
+
+        uint256 rand = seed;
+        if (portraitAmount > 0) {
+            portraits = new PortraitInfo[](portraitAmount);
+
+            for (uint256 i = 0; i < length; i += 1) {
+                uint256 amount = portraitMintParams[i].amount;
+                for (uint256 j = 0; j < amount; j += 1) {
+                    rand = uint256(keccak256(abi.encode(rand, rand)));
+                    uint16 chance = uint16(rand % MAX_TIER_CHANCE);
+                    uint16[6] memory tierChances = portraitMintInfo[portraitMintParams[i].boxType].tierChances;
+                    for (uint8 k = 0; k < TIER_COUNT; k += 1) {
+                        if (tierChances[k] > chance) {
+                            portraits[i] = PortraitInfo({
+                                boxType: portraitMintParams[i].boxType,
+                                tier: k,
+                                rand: rand / MAX_TIER_CHANCE
+                            });
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        lastRand = rand;
+    }
+
+    function _getAccessoriesInfo(
+        uint256 seed,
+        AccessoryFullRandomMintParams[] memory fullRandomMintParams,
+        AccessorySemiRandomMintParams[] memory semiRandomMintParams
+    ) internal view returns (AccessoryInfo[] memory accessories) {
+        uint256 fullRandomAmount;
+        uint256 semiRandomAmount;
+        uint256 length = fullRandomMintParams.length;
+        for (uint256 i = 0; i < length; i += 1) {
+            fullRandomAmount += fullRandomMintParams[i].amount;
+        }
+
+        length = semiRandomMintParams.length;
+        for (uint256 i = 0; i < length; i += 1) {
+            semiRandomAmount += semiRandomMintParams[i].amount;
+        }
+
+        uint256 rand = seed;
+        if (semiRandomAmount > 0 || fullRandomAmount > 0) {
+            accessories = new AccessoryInfo[](semiRandomAmount + fullRandomAmount);
+
+            for (uint256 i = 0; i < length; i += 1) {
+                uint256 amount = semiRandomMintParams[i].amount;
+                for (uint256 j = 0; j < amount; j += 1) {
+                    rand = uint256(keccak256(abi.encode(rand, rand)));
+                    uint16 chance = uint16(rand % MAX_TIER_CHANCE);
+                    uint16[6] memory tierChances = accessoryMintInfo[semiRandomMintParams[i].boxType].tierChances;
+                    for (uint8 k = 0; k < TIER_COUNT; k += 1) {
+                        if (tierChances[k] > chance) {
+                            accessories[i] = AccessoryInfo({
+                                boxType: semiRandomMintParams[i].boxType,
+                                accessoryType: semiRandomMintParams[i].accessoryType,
+                                tier: k
+                            });
+                            break;
+                        }
+                    }
+                }
+            }
+
+            length = fullRandomMintParams.length;
+            for (uint256 i = 0; i < length; i += 1) {
+                uint256 amount = fullRandomMintParams[i].amount;
+                for (uint256 j = 0; j < amount; j += 1) {
+                    rand = uint256(keccak256(abi.encode(rand, rand)));
+                    uint16 chance = uint16(rand % MAX_TIER_CHANCE);
+                    IAccessoryLayer.AccessoryType accessoryType = IAccessoryLayer.AccessoryType(
+                        uint8((rand / MAX_TIER_CHANCE) % 5)
+                    );
+                    uint16[6] memory tierChances = accessoryMintInfo[fullRandomMintParams[i].boxType].tierChances;
+                    for (uint8 k = 0; k < TIER_COUNT; k += 1) {
+                        if (tierChances[k] > chance) {
+                            accessories[i + semiRandomAmount] = AccessoryInfo({
+                                boxType: fullRandomMintParams[i].boxType,
+                                accessoryType: accessoryType,
+                                tier: k
+                            });
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     function fulfillMintRequest(bytes32 requestId) external onlyOwner {
         require(mintRequests[requestId].requester != address(0), "Request does not exist!");
+        require(mintRequests[requestId].randomNumber != 0, "Random number not generated");
         delete mintRequests[requestId];
+    }
+
+    function _initializePortraitMintInfo() internal {
+        portraitMintInfo[IBaseIlluvitar.BoxType.Virtual] = PortraitMintInfo({
+            price: 0,
+            tierChances: [10000, 0, 0, 0, 0, 0]
+        });
+        portraitMintInfo[IBaseIlluvitar.BoxType.Bronze] = PortraitMintInfo({
+            price: 5e16,
+            tierChances: [0, 8000, 9700, 9930, 9980, 10000]
+        });
+        portraitMintInfo[IBaseIlluvitar.BoxType.Silver] = PortraitMintInfo({
+            price: 10e16,
+            tierChances: [0, 6100, 8800, 9700, 9950, 10000]
+        });
+        portraitMintInfo[IBaseIlluvitar.BoxType.Gold] = PortraitMintInfo({
+            price: 25e16,
+            tierChances: [0, 2400, 6600, 8800, 9700, 10000]
+        });
+        portraitMintInfo[IBaseIlluvitar.BoxType.Platinum] = PortraitMintInfo({
+            price: 75e16,
+            tierChances: [0, 500, 2000, 4250, 8250, 10000]
+        });
+        portraitMintInfo[IBaseIlluvitar.BoxType.Diamond] = PortraitMintInfo({
+            price: 250e16,
+            tierChances: [0, 200, 1000, 2500, 5000, 10000]
+        });
+    }
+
+    function _initializeAccessoryMintInfo() internal {
+        accessoryMintInfo[IBaseIlluvitar.BoxType.Virtual] = AccessoryMintInfo({
+            randomPrice: 0,
+            semiRandomPrice: 0,
+            tierChances: [10000, 0, 0, 0, 0, 0]
+        });
+        accessoryMintInfo[IBaseIlluvitar.BoxType.Bronze] = AccessoryMintInfo({
+            randomPrice: 5e16,
+            semiRandomPrice: 10e16,
+            tierChances: [0, 8100, 9200, 9700, 9900, 10000]
+        });
+        accessoryMintInfo[IBaseIlluvitar.BoxType.Silver] = AccessoryMintInfo({
+            randomPrice: 10e16,
+            semiRandomPrice: 20e16,
+            tierChances: [0, 3000, 7600, 8800, 9700, 10000]
+        });
+        accessoryMintInfo[IBaseIlluvitar.BoxType.Gold] = AccessoryMintInfo({
+            randomPrice: 15e16,
+            semiRandomPrice: 30e16,
+            tierChances: [0, 1500, 4700, 7200, 9000, 10000]
+        });
+        accessoryMintInfo[IBaseIlluvitar.BoxType.Platinum] = AccessoryMintInfo({
+            randomPrice: 20e16,
+            semiRandomPrice: 40e16,
+            tierChances: [0, 500, 2000, 5300, 8000, 10000]
+        });
+        accessoryMintInfo[IBaseIlluvitar.BoxType.Diamond] = AccessoryMintInfo({
+            randomPrice: 25e16,
+            semiRandomPrice: 50e16,
+            tierChances: [0, 100, 600, 2800, 6000, 10000]
+        });
     }
 }
