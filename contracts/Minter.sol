@@ -5,9 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
-import "./interfaces/IAccessoryLayer.sol";
-import "./interfaces/IBaseIlluvitar.sol";
-import "./interfaces/IPortraitLayer.sol";
+import "./DataTypes.sol";
 import "./interfaces/IOracle.sol";
 import "./interfaces/IOracleRegistry.sol";
 
@@ -34,19 +32,19 @@ contract Minter is VRFConsumerBase, Ownable {
 
     //Purchase Body struct
     struct PortraitMintParams {
-        IBaseIlluvitar.BoxType boxType;
+        BoxType boxType;
         uint64 amount;
     }
 
     //Purchase Accessory struct
     struct AccessorySemiRandomMintParams {
-        IAccessoryLayer.AccessoryType accessoryType;
-        IBaseIlluvitar.BoxType boxType;
+        AccessoryType accessoryType;
+        BoxType boxType;
         uint64 amount;
     }
 
     struct AccessoryFullRandomMintParams {
-        IBaseIlluvitar.BoxType boxType;
+        BoxType boxType;
         uint64 amount;
     }
 
@@ -60,14 +58,14 @@ contract Minter is VRFConsumerBase, Ownable {
     }
 
     struct PortraitInfo {
-        IBaseIlluvitar.BoxType boxType;
+        BoxType boxType;
         uint8 tier;
         uint256 rand;
     }
 
     struct AccessoryInfo {
-        IBaseIlluvitar.BoxType boxType;
-        IAccessoryLayer.AccessoryType accessoryType;
+        BoxType boxType;
+        AccessoryType accessoryType;
         uint8 tier;
     }
 
@@ -86,8 +84,8 @@ contract Minter is VRFConsumerBase, Ownable {
     uint16 public constant MAX_TIER_CHANCE = 10000;
     uint8 public constant TIER_COUNT = 6;
 
-    mapping(IBaseIlluvitar.BoxType => PortraitMintInfo) public portraitMintInfo;
-    mapping(IBaseIlluvitar.BoxType => AccessoryMintInfo) public accessoryMintInfo;
+    mapping(BoxType => PortraitMintInfo) public portraitMintInfo;
+    mapping(BoxType => AccessoryMintInfo) public accessoryMintInfo;
 
     mapping(bytes32 => MintRequest) public mintRequests;
 
@@ -341,9 +339,7 @@ contract Minter is VRFConsumerBase, Ownable {
                 for (uint256 j = 0; j < amount; j += 1) {
                     rand = uint256(keccak256(abi.encode(rand, rand)));
                     uint16 chance = uint16(rand % MAX_TIER_CHANCE);
-                    IAccessoryLayer.AccessoryType accessoryType = IAccessoryLayer.AccessoryType(
-                        uint8((rand / MAX_TIER_CHANCE) % 5)
-                    );
+                    AccessoryType accessoryType = AccessoryType(uint8((rand / MAX_TIER_CHANCE) % 5));
                     uint16[6] memory tierChances = accessoryMintInfo[fullRandomMintParams[i].boxType].tierChances;
                     for (uint8 k = 0; k < TIER_COUNT; k += 1) {
                         if (tierChances[k] > chance) {
@@ -367,59 +363,56 @@ contract Minter is VRFConsumerBase, Ownable {
     }
 
     function _initializePortraitMintInfo() internal {
-        portraitMintInfo[IBaseIlluvitar.BoxType.Virtual] = PortraitMintInfo({
-            price: 0,
-            tierChances: [10000, 0, 0, 0, 0, 0]
-        });
-        portraitMintInfo[IBaseIlluvitar.BoxType.Bronze] = PortraitMintInfo({
+        portraitMintInfo[BoxType.Virtual] = PortraitMintInfo({ price: 0, tierChances: [10000, 0, 0, 0, 0, 0] });
+        portraitMintInfo[BoxType.Bronze] = PortraitMintInfo({
             price: 5e16,
             tierChances: [0, 8000, 9700, 9930, 9980, 10000]
         });
-        portraitMintInfo[IBaseIlluvitar.BoxType.Silver] = PortraitMintInfo({
+        portraitMintInfo[BoxType.Silver] = PortraitMintInfo({
             price: 10e16,
             tierChances: [0, 6100, 8800, 9700, 9950, 10000]
         });
-        portraitMintInfo[IBaseIlluvitar.BoxType.Gold] = PortraitMintInfo({
+        portraitMintInfo[BoxType.Gold] = PortraitMintInfo({
             price: 25e16,
             tierChances: [0, 2400, 6600, 8800, 9700, 10000]
         });
-        portraitMintInfo[IBaseIlluvitar.BoxType.Platinum] = PortraitMintInfo({
+        portraitMintInfo[BoxType.Platinum] = PortraitMintInfo({
             price: 75e16,
             tierChances: [0, 500, 2000, 4250, 8250, 10000]
         });
-        portraitMintInfo[IBaseIlluvitar.BoxType.Diamond] = PortraitMintInfo({
+        portraitMintInfo[BoxType.Diamond] = PortraitMintInfo({
             price: 250e16,
             tierChances: [0, 200, 1000, 2500, 5000, 10000]
         });
     }
 
     function _initializeAccessoryMintInfo() internal {
-        accessoryMintInfo[IBaseIlluvitar.BoxType.Virtual] = AccessoryMintInfo({
+        accessoryMintInfo[BoxType.Virtual] = AccessoryMintInfo({
             randomPrice: 0,
             semiRandomPrice: 0,
             tierChances: [10000, 0, 0, 0, 0, 0]
         });
-        accessoryMintInfo[IBaseIlluvitar.BoxType.Bronze] = AccessoryMintInfo({
+        accessoryMintInfo[BoxType.Bronze] = AccessoryMintInfo({
             randomPrice: 5e16,
             semiRandomPrice: 10e16,
             tierChances: [0, 8100, 9200, 9700, 9900, 10000]
         });
-        accessoryMintInfo[IBaseIlluvitar.BoxType.Silver] = AccessoryMintInfo({
+        accessoryMintInfo[BoxType.Silver] = AccessoryMintInfo({
             randomPrice: 10e16,
             semiRandomPrice: 20e16,
             tierChances: [0, 3000, 7600, 8800, 9700, 10000]
         });
-        accessoryMintInfo[IBaseIlluvitar.BoxType.Gold] = AccessoryMintInfo({
+        accessoryMintInfo[BoxType.Gold] = AccessoryMintInfo({
             randomPrice: 15e16,
             semiRandomPrice: 30e16,
             tierChances: [0, 1500, 4700, 7200, 9000, 10000]
         });
-        accessoryMintInfo[IBaseIlluvitar.BoxType.Platinum] = AccessoryMintInfo({
+        accessoryMintInfo[BoxType.Platinum] = AccessoryMintInfo({
             randomPrice: 20e16,
             semiRandomPrice: 40e16,
             tierChances: [0, 500, 2000, 5300, 8000, 10000]
         });
-        accessoryMintInfo[IBaseIlluvitar.BoxType.Diamond] = AccessoryMintInfo({
+        accessoryMintInfo[BoxType.Diamond] = AccessoryMintInfo({
             randomPrice: 25e16,
             semiRandomPrice: 50e16,
             tierChances: [0, 100, 600, 2800, 6000, 10000]

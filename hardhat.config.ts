@@ -116,6 +116,9 @@ const config: HardhatUserConfig = {
       default: 0,
       1: 0,
     },
+    imxMinter: {
+      3: "0x4527BE8f31E2ebFbEF4fCADDb5a17447B27d2aef",
+    },
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,

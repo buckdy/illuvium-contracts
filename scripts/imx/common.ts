@@ -102,6 +102,8 @@ export const mintL2 = async (
     blueprint, // This will come in the mintingBlob to the contract mintFor function as {tokenId}:{plotStorePack}
   };
 
+  console.log(to.toLowerCase());
+  console.log(assetAddress.toLowerCase());
   console.log("Minting on L2...");
   const mintResults = await client.mintV2([
     {

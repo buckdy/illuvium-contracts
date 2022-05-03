@@ -3,7 +3,8 @@ pragma solidity >=0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "./interfaces/IBaseIlluvitar.sol";
+import "@imtbl/imx-contracts/contracts/IMintable.sol";
+import "@imtbl/imx-contracts/contracts/utils/Minting.sol";
 
 /**
     @title BaseIlluvitar, this contract is inherited from OZ ERC721 contract,
@@ -12,7 +13,7 @@ import "./interfaces/IBaseIlluvitar.sol";
     @author Dmitry Yakovlevich
  */
 
-abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeable, IBaseIlluvitar {
+abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeable, IMintable {
     /**
      * @notice event emitted when base URI is set.
      * @dev emitted in {setBaseUri} function.
@@ -20,35 +21,27 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
      */
     event BaseUriUpdated(string baseUri);
 
-    struct IlluvitarMetadata {
-        BoxType boxType;
-        uint8 tier;
-    }
-
     // NFT Minter Address.
-    address public minter;
-    // LastToken ID that already minted.
-    uint256 public lastTokenId;
-    mapping(uint256 => IlluvitarMetadata) public metadata;
+    address public imxMinter;
     string internal __baseUri;
 
     /**
      * @notice Initialize Base Illuvitar.
      * @param name_ NFT Name.
      * @param symbol_ NFT Symbol.
-     * @param _minter NFT Minter Address.
+     * @param imxMinter_ NFT Minter Address.
      */
     function __BaseIlluvitar_init(
         string memory name_,
         string memory symbol_,
-        address _minter
+        address imxMinter_
     ) internal initializer {
         __ERC721_init(name_, symbol_);
         __ERC721Enumerable_init();
         __Ownable_init();
 
-        require(_minter != address(0), "Minter cannot zero");
-        minter = _minter;
+        require(imxMinter_ != address(0), "Minter cannot zero");
+        imxMinter = imxMinter_;
     }
 
     /**
@@ -73,9 +66,14 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
      * @notice Safely mint.
      * @dev inaccessible from outside.
      * @param to NFT recipient address.
-     * @param _data mint data
+     * @param tokenId NFT tokenId.
+     * @param blueprint mint data.
      */
-    function _mint(address to, bytes calldata _data) internal virtual;
+    function _mint(
+        address to,
+        uint256 tokenId,
+        bytes memory blueprint
+    ) internal virtual;
 
     function mintFor(
         address to,
@@ -83,7 +81,8 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
         bytes calldata mintingBlob
     ) external override {
         require(quantity == 1, "Amount must be 1");
-        require(msg.sender == minter, "caller is not minter");
-        _mint(to, mintingBlob);
+        require(msg.sender == imxMinter, "caller is not minter");
+        (uint256 id, bytes memory blueprint) = Minting.split(mintingBlob);
+        _mint(to, id, blueprint);
     }
 }

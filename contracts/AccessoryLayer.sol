@@ -2,7 +2,7 @@
 pragma solidity >=0.8.4;
 
 import "./BaseIlluvitar.sol";
-import "./interfaces/IAccessoryLayer.sol";
+import "./DataTypes.sol";
 
 /**
     @title AccessoryLayer, this contract is inherited from BaseIlluvitar contract,
@@ -10,28 +10,47 @@ import "./interfaces/IAccessoryLayer.sol";
     @author Dmitry Yakovlevich
  */
 
-contract AccessoryLayer is BaseIlluvitar, IAccessoryLayer {
-    mapping(uint256 => AccessoryType) public override accessoryTypes;
+contract AccessoryLayer is BaseIlluvitar {
+    struct Metadata {
+        bool initialized;
+        BoxType boxType;
+        uint8 tier;
+        AccessoryType accessoryType;
+    }
+
+    mapping(uint256 => Metadata) public metadata;
 
     /**
      * @notice Initialize Accessory NFT.
      * @param name_ NFT Name.
      * @param symbol_ NFT Symbol.
-     * @param _minter NFT Minter Address.
+     * @param imxMinter_ NFT Minter Address.
      */
     function initialize(
         string memory name_,
         string memory symbol_,
-        address _minter
+        address imxMinter_
     ) external initializer {
-        __BaseIlluvitar_init(name_, symbol_, _minter);
+        __BaseIlluvitar_init(name_, symbol_, imxMinter_);
     }
 
-    function _mint(address to, bytes calldata _data) internal override {
-        lastTokenId += 1;
-        _safeMint(to, lastTokenId);
-        (BoxType boxType, uint8 tier, AccessoryType accessoryType) = abi.decode(_data, (BoxType, uint8, AccessoryType));
-        metadata[lastTokenId] = IlluvitarMetadata({ boxType: boxType, tier: tier });
-        accessoryTypes[lastTokenId] = accessoryType;
+    function _mint(
+        address to,
+        uint256 tokenId,
+        bytes memory blueprint
+    ) internal override {
+        _safeMint(to, tokenId);
+        if (!metadata[tokenId].initialized) {
+            (BoxType boxType, uint8 tier, AccessoryType accessoryType) = abi.decode(
+                blueprint,
+                (BoxType, uint8, AccessoryType)
+            );
+            metadata[tokenId] = Metadata({
+                initialized: true,
+                boxType: boxType,
+                tier: tier,
+                accessoryType: accessoryType
+            });
+        }
     }
 }
