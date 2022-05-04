@@ -6,11 +6,7 @@ import "solidity-coverage";
 import "@openzeppelin/hardhat-upgrades";
 import "hardhat-dependency-compiler";
 import "hardhat-deploy";
-
-// import "./tasks/deploy";
-
 import { resolve } from "path";
-
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import { NetworkUserConfig } from "hardhat/types";
@@ -18,11 +14,8 @@ import { NetworkUserConfig } from "hardhat/types";
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
 const chainIds = {
-  goerli: 5,
   hardhat: 31337,
-  kovan: 42,
   mainnet: 1,
-  rinkeby: 4,
   ropsten: 3,
 };
 
@@ -65,10 +58,8 @@ const config: HardhatUserConfig = {
       },
       chainId: chainIds.hardhat,
     },
-    goerli: getChainConfig("goerli"),
-    kovan: getChainConfig("kovan"),
-    rinkeby: getChainConfig("rinkeby"),
     ropsten: getChainConfig("ropsten"),
+    mainnet: getChainConfig("mainnet"),
   },
   paths: {
     artifacts: "./artifacts",
@@ -118,6 +109,15 @@ const config: HardhatUserConfig = {
     },
     imxMinter: {
       3: "0x4527BE8f31E2ebFbEF4fCADDb5a17447B27d2aef",
+    },
+    linkToken: {
+      3: "0xb953b44b4e776313B1236D92C09D9ce39135EdbE",
+    },
+    weth: {
+      3: "0xc778417e063141139fce010982780140aa0cd5ab",
+    },
+    vrfCoordinator: {
+      3: "0xf8046Eb28d62D12AB1b55e8e6A9742C1b1F51164",
     },
   },
   etherscan: {

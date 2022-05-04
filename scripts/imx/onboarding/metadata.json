@@ -1,9 +1,5 @@
 [
   {
-    "name": "name",
-    "type": "text"
-  },
-  {
     "name": "boxType",
     "type": "enum",
     "filterable": true

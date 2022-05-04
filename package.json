@@ -91,6 +91,6 @@
   },
   "dependencies": {
     "@chainlink/contracts": "^0.2.2",
-    "@imtbl/imx-sdk": "^1.8.0"
+    "@imtbl/imx-sdk": "1.17.0"
   }
 }

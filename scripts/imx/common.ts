@@ -1,4 +1,4 @@
-import { ImmutableXClient, ImmutableMethodResults } from "@imtbl/imx-sdk";
+import { ImmutableXClient, ImmutableMethodResults, MintableERC721TokenType } from "@imtbl/imx-sdk";
 import { providers, Wallet, Signer } from "ethers";
 import { Minter__factory, Minter } from "../../typechain";
 import "dotenv/config";
@@ -94,7 +94,7 @@ export const mintL2 = async (
   to: string,
   tokenId: string,
   blueprint: string,
-): Promise<ImmutableMethodResults.ImmutableOffchainMintV2Results> => {
+): Promise<ImmutableMethodResults.ImmutableOffchainMintResults> => {
   // a token to mint - plotStorePack should be a string representation of uint256 in decimal format
   const token = {
     id: tokenId.toString(),
@@ -105,18 +105,38 @@ export const mintL2 = async (
   console.log(to.toLowerCase());
   console.log(assetAddress.toLowerCase());
   console.log("Minting on L2...");
-  const mintResults = await client.mintV2([
-    {
-      users: [
-        {
-          etherKey: to.toLowerCase(),
-          tokens: [token],
-        },
-      ],
-      contractAddress: assetAddress.toLowerCase(),
-    },
-  ]);
+  const result = await client.mint({
+    mints: [
+      {
+        etherKey: to.toLowerCase(),
+        tokens: [
+          {
+            type: MintableERC721TokenType.MINTABLE_ERC721,
+            data: {
+              tokenAddress: assetAddress.toLowerCase(), // address of token
+              id: tokenId.toString(), // must be a unique uint256 as a string
+              blueprint, // metadata can be anything but your L1 contract must parse it on withdrawal from the blueprint format '{tokenId}:{metadata}'
+            },
+          },
+        ],
+        nonce: "1",
+        authSignature: "", // Leave empty
+      },
+    ],
+  });
+  console.log(result);
+  // const mintResults = await client.mintV2([
+  //   {
+  //     users: [
+  //       {
+  //         etherKey: to.toLowerCase(),
+  //         tokens: [token],
+  //       },
+  //     ],
+  //     contractAddress: assetAddress.toLowerCase(),
+  //   },
+  // ]);
   console.log(`Minting of tokenId ${tokenId} of collection ${assetAddress.toLowerCase()} successful on L2`);
 
-  return mintResults;
+  return result;
 };

@@ -5,9 +5,8 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, get } = hre.deployments;
   const { deployer, imxMinter } = await hre.getNamedAccounts();
 
-  // const ProxyAdmin = await get("ProxyAdmin");
-
-  await deploy("AccessoryLayer", {
+  await deploy("PropsAccessoryLayer", {
+    contract: "AccessoryLayer",
     from: deployer,
     args: [],
     log: true,
@@ -18,7 +17,7 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
       execute: {
         init: {
           methodName: "initialize",
-          args: ["Test Accessory", "ACC", imxMinter],
+          args: ["Illuvitar Props Accessory", "IPA", imxMinter],
         },
       },
     },
@@ -26,4 +25,4 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 module.exports = deploy;
-module.exports.tags = ["AccessoryLayer"];
+module.exports.tags = ["Props"];

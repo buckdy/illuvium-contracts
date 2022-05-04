@@ -1,3 +1,4 @@
+import { utils } from "ethers";
 import { getImmutableXClient, mintL2, getMinterContract, getProvider } from "./common";
 import { NETWORK } from "./onboarding/config";
 import Config from "./onboarding/config";
@@ -13,13 +14,18 @@ async function main() {
 
   const minter = await getMinterContract(NETWORK);
 
+  const blueprint = utils.defaultAbiCoder.encode(["uint8", "uint8", "uint8"], [1, 2, 3]);
+  console.log(blueprint);
+
   await mintL2(
     client,
     config.collection.contract_address,
-    "0xA4e47B38415201d4c8aB42711892A31C7B06bdE9".toLowerCase(),
-    "1",
-    "0",
+    "0xA4e47B38415201d4c8aB42711892A31C7B06bdE9",
+    "2",
+    blueprint,
   );
+
+  console.log("####");
 
   // minter.on("RequestFulfilled", async (requestId, randomNumber) => {
   //   const mintParams = await minter.getMintRequest(requestId);

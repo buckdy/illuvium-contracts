@@ -13,6 +13,7 @@ import Config, { NETWORK } from "./config";
  */
 async function createCollection(
   client: ImmutableXClient,
+  clientPublicKey: string,
   projectId: string,
   collectionMetadata: any,
 ): Promise<CreateCollectionsResult> {
@@ -31,7 +32,7 @@ async function createCollection(
     collection = await client.createCollection({
       name: collectionMetadata.name,
       contract_address: collectionMetadata.contract_address.toLowerCase(),
-      owner_public_key: client.address.toLowerCase(),
+      owner_public_key: clientPublicKey.toLowerCase(),
       icon_url: collectionMetadata.icon_url,
       metadata_api_url: collectionMetadata.metadata_api_url,
       collection_image_url: collectionMetadata.collection_image_url,
@@ -53,14 +54,13 @@ async function main() {
   // Get configuration for network
   const config = Config(NETWORK);
 
+  const wallet = getWalletFromMnemonic(NETWORK, config.mnemonic, config.address_index);
+
   // Get IMX client instance
-  const client = await getImmutableXClientFromWallet(
-    getWalletFromMnemonic(NETWORK, config.mnemonic, config.address_index),
-    config.IMXClientConfig,
-  );
+  const client = await getImmutableXClientFromWallet(wallet, config.IMXClientConfig);
 
   // Create collection given client, project id, collection name and ERC721 L1 contract address
-  await createCollection(client, config.collection.project_id, config.collection);
+  await createCollection(client, wallet.publicKey, config.collection.project_id, config.collection);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
