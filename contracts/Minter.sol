@@ -28,7 +28,7 @@ contract Minter is VRFConsumerBase, Ownable {
      * @param requester requester address.
      * @param requestId requestId number.
      */
-    event MintRequested(address indexed requester, bytes32 requestId, MintRequest mintRequest);
+    event MintRequested(address indexed requester, bytes32 requestId);
 
     //Purchase Body struct
     struct PortraitMintParams {
@@ -221,7 +221,7 @@ contract Minter is VRFConsumerBase, Ownable {
             IERC20(paymentToken).safeTransferFrom(_msgSender(), treasury, tokenAmount);
         }
 
-        emit MintRequested(_msgSender(), requestId, mintRequests[requestId]);
+        emit MintRequested(_msgSender(), requestId);
     }
 
     function getMintResult(bytes32 requestId)
