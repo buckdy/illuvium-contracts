@@ -1,6 +1,5 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { constants } from "ethers";
 
 const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy, get } = hre.deployments;

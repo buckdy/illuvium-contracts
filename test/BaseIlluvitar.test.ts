@@ -1,9 +1,9 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
-import { constants, utils } from "ethers";
+import { utils } from "ethers";
 import { AccessoryLayer } from "../typechain";
-import { BoxType, AccessoryType } from "./utils";
+import { BoxType, AccessoryType, makeAccessoryMintingBlob } from "./utils";
 
 describe("BaseIlluvitar", () => {
   let baseIlluvitar: AccessoryLayer;
@@ -28,7 +28,7 @@ describe("BaseIlluvitar", () => {
     it("check initialized data", async () => {
       expect(await baseIlluvitar.name()).to.equal(NAME);
       expect(await baseIlluvitar.symbol()).to.equal(SYMBOL);
-      expect(await baseIlluvitar.minter()).to.equal(minter.address);
+      expect(await baseIlluvitar.imxMinter()).to.equal(minter.address);
     });
   });
 
@@ -43,10 +43,7 @@ describe("BaseIlluvitar", () => {
       const tx = await baseIlluvitar.connect(owner).setBaseUri("https://illuvium.io/");
       await expect(tx).to.emit(baseIlluvitar, "BaseUriUpdated").withArgs("https://illuvium.io/");
 
-      const data = utils.defaultAbiCoder.encode(
-        ["uint8", "uint8", "uint8"],
-        [BoxType.Diamond, 2, AccessoryType.EyeWear],
-      );
+      const data = makeAccessoryMintingBlob(1, BoxType.Diamond, 3, AccessoryType.EyeWear);
       await baseIlluvitar.connect(minter).mintFor(alice.address, 1, data);
 
       expect(await baseIlluvitar.tokenURI("1")).to.be.equal("https://illuvium.io/1");
@@ -54,7 +51,7 @@ describe("BaseIlluvitar", () => {
   });
 
   describe("mintFor", () => {
-    const data = utils.defaultAbiCoder.encode(["uint8", "uint8", "uint8"], [BoxType.Diamond, 2, AccessoryType.EyeWear]);
+    const data = makeAccessoryMintingBlob(1, BoxType.Diamond, 3, AccessoryType.EyeWear);
 
     it("Revert if not owner", async () => {
       await expect(baseIlluvitar.connect(alice).mintFor(alice.address, 1, data)).to.revertedWith(

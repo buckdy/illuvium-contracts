@@ -1,4 +1,4 @@
-import { Wallet } from "ethers";
+import { BigNumberish, Wallet, utils } from "ethers";
 
 export enum AccessoryType {
   Skin = 0,
@@ -17,4 +17,28 @@ export enum BoxType {
   Diamond = 5,
 }
 
-export const generateRandomAddress = () => Wallet.createRandom().address;
+export const generateRandomAddress = (): string => Wallet.createRandom().address;
+
+export const makePortraitMintingBlob = (
+  tokenId: BigNumberish,
+  boxType: BoxType,
+  tier: number,
+  skinId: BigNumberish,
+  bodyId: BigNumberish,
+  eyeId: BigNumberish,
+  headId: BigNumberish,
+  propsId: BigNumberish,
+): string => {
+  return utils.formatBytes32String(
+    `{${tokenId.toString()}}:{${boxType}${tier},${skinId},${bodyId},${eyeId},${headId},${propsId}}`,
+  );
+};
+
+export const makeAccessoryMintingBlob = (
+  tokenId: BigNumberish,
+  boxType: BoxType,
+  tier: number,
+  acccessoryType: AccessoryType,
+): string => {
+  return utils.formatBytes32String(`{${tokenId.toString()}}:{${boxType}${tier}${acccessoryType}}`);
+};

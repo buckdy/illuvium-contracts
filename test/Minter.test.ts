@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Contract, constants, utils } from "ethers";
 import { Minter } from "../typechain";
-import { generateRandomAddress, BoxType } from "./utils";
+import { generateRandomAddress } from "./utils";
 
 describe("Minter", () => {
   let owner: SignerWithAddress;
@@ -78,72 +78,6 @@ describe("Minter", () => {
       const newTreasury = "0xA4e47B38415201d4c8aB42711892A31C7B06bdE9";
       await minterContract.connect(owner).setTreasury(newTreasury);
       expect(await minterContract.treasury()).to.equal(newTreasury);
-    });
-  });
-
-  describe("setPortraitLayerPrice", () => {
-    const price = utils.parseEther("0.2");
-
-    it("Revert if caller is not owner", async () => {
-      await expect(minterContract.connect(alice).setPortraitLayerPrice([BoxType.Diamond], [price])).to.revertedWith(
-        "Ownable: caller is not the owner",
-      );
-    });
-
-    it("Revert if length is invalid", async () => {
-      await expect(minterContract.setPortraitLayerPrice([], [])).to.revertedWith("Invalid length");
-      await expect(minterContract.setPortraitLayerPrice([BoxType.Diamond, 1], [price])).to.revertedWith(
-        "Invalid length",
-      );
-    });
-
-    it("set portrait price", async () => {
-      await minterContract.setPortraitLayerPrice([BoxType.Diamond], [price]);
-      expect(await minterContract.portraitLayerPrices(BoxType.Diamond)).to.equal(price);
-    });
-  });
-
-  describe("setAccessoryLayerFullRandomPrice", () => {
-    const price = utils.parseEther("0.2");
-
-    it("Revert if caller is not owner", async () => {
-      await expect(
-        minterContract.connect(alice).setAccessoryLayerFullRandomPrice([BoxType.Diamond], [price]),
-      ).to.revertedWith("Ownable: caller is not the owner");
-    });
-
-    it("Revert if length is invalid", async () => {
-      await expect(minterContract.setAccessoryLayerFullRandomPrice([], [])).to.revertedWith("Invalid length");
-      await expect(minterContract.setAccessoryLayerFullRandomPrice([BoxType.Diamond, 1], [price])).to.revertedWith(
-        "Invalid length",
-      );
-    });
-
-    it("set portrait price", async () => {
-      await minterContract.setAccessoryLayerFullRandomPrice([BoxType.Diamond], [price]);
-      expect(await minterContract.accessoryLayerFullRandomPrices(BoxType.Diamond)).to.equal(price);
-    });
-  });
-
-  describe("setAccessoryLayerSemiRandomPrices", () => {
-    const price = utils.parseEther("0.2");
-
-    it("Revert if caller is not owner", async () => {
-      await expect(
-        minterContract.connect(alice).setAccessoryLayerSemiRandomPrices([BoxType.Diamond], [price]),
-      ).to.revertedWith("Ownable: caller is not the owner");
-    });
-
-    it("Revert if length is invalid", async () => {
-      await expect(minterContract.setAccessoryLayerSemiRandomPrices([], [])).to.revertedWith("Invalid length");
-      await expect(minterContract.setAccessoryLayerSemiRandomPrices([BoxType.Diamond, 1], [price])).to.revertedWith(
-        "Invalid length",
-      );
-    });
-
-    it("set portrait price", async () => {
-      await minterContract.setAccessoryLayerSemiRandomPrices([BoxType.Diamond], [price]);
-      expect(await minterContract.accessoryLayerSemiRandomPrices(BoxType.Diamond)).to.equal(price);
     });
   });
 

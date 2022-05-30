@@ -20,9 +20,9 @@ const projectConfig = {
 // Relative configuration object
 // Configuration for new IMX collection -- 3_create_collection.js
 const collectionConfig = {
-  project_id: "41911", // Project ID where the collection will be created
-  name: "AccessoryIlluvitar", // Name of the collection
-  contract_address: "0xe777B8a3c599a85c86f8e88F1006464d10185983", // Address of the ERC721 contract on L1
+  project_id: "51891", // Project ID where the collection will be created
+  name: "BodyAccessoryIlluvitar", // Name of the collection
+  contract_address: "0x6eb8188d8D8157C25c4D6F9370b91f0613ea9368", // Address of the ERC721 contract on L1
   icon_url: "", // URL or base64 encoded SVG image for the collection icon -- optional
   metadata_api_url: "", // The metadata API base URL (used to feed each token with unique metadata) -- optional
   collection_image_url: "", // URL or base64 encoded SVG image for the collection banner/tile -- optional
@@ -31,7 +31,7 @@ const collectionConfig = {
 // Relative configuration object
 // Metadata schema for the IMX collection -- 4_add_metadata_schema.js
 const collectionMetadataSchema = {
-  contract_address: "0xe777B8a3c599a85c86f8e88F1006464d10185983",
+  contract_address: "0x6eb8188d8D8157C25c4D6F9370b91f0613ea9368",
   metadata: collectionMetadata,
 };
 

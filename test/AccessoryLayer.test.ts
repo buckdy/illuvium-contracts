@@ -3,7 +3,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, upgrades } from "hardhat";
 import { utils } from "ethers";
 import { AccessoryLayer } from "../typechain";
-import { AccessoryType, BoxType } from "./utils";
+import { AccessoryType, BoxType, makeAccessoryMintingBlob } from "./utils";
 
 describe("AccessoryLayer", () => {
   let accessoryLayer: AccessoryLayer;
@@ -25,16 +25,13 @@ describe("AccessoryLayer", () => {
 
   describe("mint", () => {
     it("mint with metadata", async () => {
-      const data = utils.defaultAbiCoder.encode(
-        ["uint8", "uint8", "uint8"],
-        [BoxType.Diamond, 2, AccessoryType.EyeWear],
-      );
+      const data = makeAccessoryMintingBlob(1, BoxType.Diamond, 3, AccessoryType.EyeWear);
       await accessoryLayer.connect(minter).mintFor(alice.address, 1, data);
       const metadata = await accessoryLayer.metadata(1);
 
       expect(metadata.boxType).to.equal(BoxType.Diamond);
-      expect(metadata.tier).to.equal(2);
-      expect(await accessoryLayer.accessoryTypes(1)).to.equal(AccessoryType.EyeWear);
+      expect(metadata.tier).to.equal(3);
+      expect(metadata.accessoryType).to.equal(AccessoryType.EyeWear);
     });
   });
 });

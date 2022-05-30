@@ -3,6 +3,7 @@ pragma solidity >=0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@imtbl/imx-contracts/contracts/IMintable.sol";
 import "@imtbl/imx-contracts/contracts/utils/Minting.sol";
 
@@ -13,7 +14,7 @@ import "@imtbl/imx-contracts/contracts/utils/Minting.sol";
     @author Dmitry Yakovlevich
  */
 
-abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeable, IMintable {
+abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, UUPSUpgradeable, OwnableUpgradeable, IMintable {
     /**
      * @notice event emitted when base URI is set.
      * @dev emitted in {setBaseUri} function.
@@ -85,4 +86,19 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, OwnableUpgradeab
         (uint256 id, bytes memory blueprint) = Minting.split(mintingBlob);
         _mint(to, id, blueprint);
     }
+
+    /**
+     * @dev Checks if the byte1 represented character is a decimal number or not (base 10)
+     *
+     * @return true if the character represents a decimal number
+     */
+    function _isDecimal(bytes1 char) internal pure returns (bool) {
+        return uint8(char) >= 0x30 && uint8(char) < 0x3A;
+    }
+
+    /// @inheritdoc UUPSUpgradeable
+    function _authorizeUpgrade(address) internal virtual override onlyOwner {}
+
+    /// @dev UUPSUpgradeable storage gap
+    uint256[42] private __gap;
 }

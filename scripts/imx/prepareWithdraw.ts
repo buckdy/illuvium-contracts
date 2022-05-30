@@ -1,5 +1,5 @@
 import { utils } from "ethers";
-import { getImmutableXClient, mintL2, getMinterContract, getProvider } from "./common";
+import { getImmutableXClient, prepareWithdraw } from "./common";
 import { NETWORK } from "./onboarding/config";
 import Config from "./onboarding/config";
 
@@ -12,7 +12,7 @@ async function main() {
 
   const client = await getImmutableXClient(NETWORK);
 
-  await mintL2(client, config.collection.contract_address, "0xA4e47B38415201d4c8aB42711892A31C7B06bdE9", "1", "123");
+  await prepareWithdraw(client, config.collection.contract_address, "1");
 }
 
 // We recommend this pattern to be able to use async/await everywhere

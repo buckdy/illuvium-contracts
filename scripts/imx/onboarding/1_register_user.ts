@@ -1,4 +1,5 @@
 import { ImmutableXClient } from "@imtbl/imx-sdk";
+import { Wallet } from "ethers";
 import { getImmutableXClientFromWallet, getWalletFromMnemonic } from "../common";
 import Config, { NETWORK } from "./config";
 
@@ -7,7 +8,7 @@ import Config, { NETWORK } from "./config";
  *
  * @param client already configured ImmutableXClient instance
  */
-export const registerUser = async (client: ImmutableXClient) => {
+export const registerUser = async (client: ImmutableXClient, wallet: Wallet) => {
   console.log("Registering user...");
   console.log(client.address.toLowerCase());
   try {
@@ -19,7 +20,7 @@ export const registerUser = async (client: ImmutableXClient) => {
     console.log(err);
     try {
       await client.registerImx({
-        etherKey: client.address.toLowerCase(),
+        etherKey: wallet.publicKey.toLowerCase(),
         starkPublicKey: client.starkPublicKey.toLowerCase(),
       });
       console.log(`User ${client.address.toLowerCase()} registered successfully!`);
@@ -37,14 +38,12 @@ async function main() {
   // Get configuration for network
   const config = Config(NETWORK);
 
+  const wallet = getWalletFromMnemonic(NETWORK, config.mnemonic, config.address_index);
   // Get IMX client instance
-  const client = await getImmutableXClientFromWallet(
-    getWalletFromMnemonic(NETWORK, config.mnemonic, config.address_index),
-    config.IMXClientConfig,
-  );
+  const client = await getImmutableXClientFromWallet(wallet, config.IMXClientConfig);
 
   // Register user for given `wallet` and `IMXClientConfig`
-  await registerUser(client);
+  await registerUser(client, wallet);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

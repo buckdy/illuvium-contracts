@@ -41,10 +41,7 @@ contract AccessoryLayer is BaseIlluvitar {
     ) internal override {
         _safeMint(to, tokenId);
         if (!metadata[tokenId].initialized) {
-            (BoxType boxType, uint8 tier, AccessoryType accessoryType) = abi.decode(
-                blueprint,
-                (BoxType, uint8, AccessoryType)
-            );
+            (BoxType boxType, uint8 tier, AccessoryType accessoryType) = _parseBlueprint(blueprint);
             metadata[tokenId] = Metadata({
                 initialized: true,
                 boxType: boxType,
@@ -52,5 +49,29 @@ contract AccessoryLayer is BaseIlluvitar {
                 accessoryType: accessoryType
             });
         }
+    }
+
+    function _parseBlueprint(bytes memory blueprint)
+        private
+        pure
+        returns (
+            BoxType boxType,
+            uint8 tier,
+            AccessoryType accessoryType
+        )
+    {
+        uint8 j = 0;
+        uint8[] memory parsedData = new uint8[](3);
+
+        uint256 len = blueprint.length;
+        for (uint256 i = 0; i < len; i += 1) {
+            if (_isDecimal(blueprint[i])) {
+                parsedData[j] = uint8(blueprint[i]) - 0x30;
+                j += 1;
+            }
+        }
+        boxType = BoxType(parsedData[0]);
+        tier = parsedData[1];
+        accessoryType = AccessoryType(parsedData[2]);
     }
 }

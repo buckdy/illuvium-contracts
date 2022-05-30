@@ -1,7 +1,8 @@
 import { utils } from "ethers";
-import { getImmutableXClient, mintL2, getMinterContract, getProvider } from "./common";
+import { getImmutableXClient, completeWithdraw } from "./common";
 import { NETWORK } from "./onboarding/config";
 import Config from "./onboarding/config";
+import { ETHTokenType } from "@imtbl/imx-sdk";
 
 // we're going to use async/await programming style, therefore we put
 // all the logic into async main and execute it in the end of the file
@@ -10,9 +11,17 @@ async function main() {
   // Get configuration for the network
   const config = Config(NETWORK);
 
+  console.log(NETWORK);
+  // const wallet = getWallet(network);
   const client = await getImmutableXClient(NETWORK);
+  console.log(client.address);
 
-  await mintL2(client, config.collection.contract_address, "0xA4e47B38415201d4c8aB42711892A31C7B06bdE9", "1", "123");
+  const token = await client.getAsset({
+    address: config.collection.contract_address.toLowerCase(),
+    id: "1",
+  });
+
+  await completeWithdraw(client, config.collection.contract_address, "1");
 }
 
 // We recommend this pattern to be able to use async/await everywhere
