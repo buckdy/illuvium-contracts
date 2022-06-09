@@ -4,7 +4,7 @@ pragma solidity 0.8.14;
 import "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 
-contract VRFCoordinatorMock {
+contract VRFCoordinatorMockV2 {
     LinkTokenInterface public LINK;
 
     event RandomnessRequest(address indexed sender, bytes32 indexed keyHash, uint256 indexed seed);

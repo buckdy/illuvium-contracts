@@ -51,7 +51,7 @@ export const deployProxy = async (
     ...implArtifact,
   };
 
-  await hre.deployments.save(name, deploymentsInfo);
+  await hre.deployments.save(`${name}`, deploymentsInfo);
 
   console.log(`Deploy ${name} Proxy done -> ` + proxy.address);
 };
