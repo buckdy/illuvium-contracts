@@ -1,135 +1,165 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.4;
+pragma solidity 0.8.14;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "./chainlink/VRFConsumerBaseUpgradeable.sol";
 import "./DataTypes.sol";
-import "./interfaces/IOracle.sol";
-import "./interfaces/IOracleRegistry.sol";
+import "./interfaces/IAggregator.sol";
 
 /**
-    @title Minter, this contract is inherited from chainlink VRFConsumerBase,
-    this contract contains purchase function which users interact to mint several base or accessory illuvitars.
-    @author Dmitry Yakovlevich
+ * @title Minter
+ * @notice Allow users to request minting Illuvitars.
+ * @dev Users can use ETH or sILV to request minting.
+ * @dev Minter uses an chainlink VRF to genrate randomness.
+ * @author Dmitry Yakovlevich
  */
+contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeable {
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
-contract Minter is VRFConsumerBase, Ownable {
-    using SafeERC20 for IERC20;
-
-    event TreasurySet(address indexed treasury);
-    event OracleRegistrySet(address indexed oracleRegistry);
-    event RequestFulfilled(bytes32 indexed requestId, uint256 randomNumber);
-
-    /**
-     * @notice event emitted random accessory requested.
-     * @dev emitted in {purchase} or {requestRandomAgain} function.
-     * @param requester requester address.
-     * @param requestId requestId number.
-     */
-    event MintRequested(address indexed requester, bytes32 requestId);
-
-    //Purchase Body struct
-    struct PortraitMintParams {
-        BoxType boxType;
-        uint64 amount;
-    }
-
-    //Purchase Accessory struct
-    struct AccessorySemiRandomMintParams {
-        AccessoryType accessoryType;
-        BoxType boxType;
-        uint64 amount;
-    }
-
-    struct AccessoryFullRandomMintParams {
-        BoxType boxType;
-        uint64 amount;
-    }
-
-    //Purchase RandomAccessory struct
-    struct MintRequest {
-        address requester;
-        PortraitMintParams[] portraitMintParams;
-        AccessorySemiRandomMintParams[] accessorySemiRandomMintParams;
-        AccessoryFullRandomMintParams[] accessoryFullRandomMintParams;
-        uint256 randomNumber;
-    }
-
-    struct PortraitInfo {
-        BoxType boxType;
-        uint8 tier;
-        uint256 rand;
-    }
-
-    struct AccessoryInfo {
-        BoxType boxType;
-        AccessoryType accessoryType;
-        uint8 tier;
-    }
-
-    struct PortraitMintInfo {
-        uint256 price;
-        uint16[6] tierChances;
-    }
-
-    struct AccessoryMintInfo {
-        uint256 randomPrice;
-        uint256 semiRandomPrice;
-        uint16[6] tierChances;
-    }
-
-    address private constant ETHER_ADDRESS = address(0x0000000000000000000000000000000000000000);
     uint16 public constant MAX_TIER_CHANCE = 10000;
     uint8 public constant TIER_COUNT = 6;
 
+    /// @dev Portrait mint information
     mapping(BoxType => PortraitMintInfo) public portraitMintInfo;
+    /// @dev Accessory mint information
     mapping(BoxType => AccessoryMintInfo) public accessoryMintInfo;
-
+    /// @dev User's mint requests
     mapping(bytes32 => MintRequest) public mintRequests;
+    /// @dev Portrait sale window
+    SaleWindow public portraitSaleWindow;
 
+    /// @dev sILV2 token address
+    address public sIlv;
+    /// @dev treasury address
     address public treasury;
-    address public weth;
-    address public oracleRegistry;
+    /// @dev ILV/ETH Chainlink price feed address
+    IAggregator public ilvETHAggregator;
+    /// @dev chainlink VRF key hash
     bytes32 public vrfKeyHash;
+    /// @dev chainlink VRF fee
     uint256 public vrfFee;
 
+    /* ======== EVENTS ======== */
+    /// @dev Emitted when treasury updated.
+    event TreasurySet(address indexed treasury);
+    /// @dev Emitted when user request mint.
+    event MintRequested(address indexed requester, bytes32 requestId);
+    /// @dev Emitted when chainlink fulfilled VRF request.
+    event RequestFulfilled(bytes32 indexed requestId, uint256 randomNumber);
+
+    /* ======== STRUCT ======== */
+    /// @dev Portrait mint params
+    struct PortraitMintParams {
+        BoxType boxType; // box type
+        uint64 amount; // portrait amount to mint
+    }
+
+    /// @dev Accessory semi random mint params
+    struct AccessorySemiRandomMintParams {
+        AccessoryType accessoryType; // accessory type
+        BoxType boxType; // box type
+        uint64 amount; // accessory amount to mint
+    }
+
+    /// @dev Accessory full random mint params
+    struct AccessoryFullRandomMintParams {
+        BoxType boxType; // box type
+        uint64 amount; // portrait amount to mint
+    }
+
+    /// @dev User's mint request data
+    struct MintRequest {
+        address requester; // requester address
+        PortraitMintParams[] portraitMintParams; // portrait mint params
+        AccessorySemiRandomMintParams[] accessorySemiRandomMintParams; // accessory semi mint params
+        AccessoryFullRandomMintParams[] accessoryFullRandomMintParams; // accessory full mint params
+        uint256 randomNumber; // random number from chainlink
+    }
+
+    /// @dev Mintable portrait info
+    struct PortraitInfo {
+        BoxType boxType; // box type
+        uint8 tier; // tier
+        uint256 rand; // extra random number to generate another off-chain data
+    }
+
+    /// @dev Mintable accessory info
+    struct AccessoryInfo {
+        BoxType boxType; // box type
+        AccessoryType accessoryType; // accessory type
+        uint8 tier; // tier
+    }
+
+    /// @dev Portrait price and tier pick chances for each box type
+    struct PortraitMintInfo {
+        uint256 price; // price
+        uint16[6] tierChances; // tier chances
+    }
+
+    /// @dev Accessory semi and random price and tier pick chances for each box type
+    struct AccessoryMintInfo {
+        uint256 randomPrice; // full random price
+        uint256 semiRandomPrice; // semi random price
+        uint16[6] tierChances; // tier chances
+    }
+
+    /// @dev Sale window
+    struct SaleWindow {
+        uint64 start;
+        uint64 end;
+    }
+
     /**
-     * @notice Constructor.
-     * @param _vrfCoordinator Chainlink VRF Coordinator address.
-     * @param _linkToken LINK token address.
-     * @param _vrfKeyhash Key Hash.
-     * @param _vrfFee Fee.
-     * @param _treasury Treasury Address.
-     * @param _weth WETH Address.
-     * @param _oracleRegistry IlluviumOracleRegistry Address.
+     * @dev UUPSUpgradeable initializer
+     * @param _vrfCoordinator Chainlink VRF Coordinator address
+     * @param _linkToken LINK token address
+     * @param _vrfKeyhash Chainlink VRF Key Hash
+     * @param _vrfFee Chainlink VRF Fee
+     * @param _treasury Treasury address
+     * @param _sIlv sILV2 token address
+     * @param _ilvEthAggregator ILV/ETH Chainlink price feed
      */
-    constructor(
+    function initialize(
         address _vrfCoordinator,
         address _linkToken,
         bytes32 _vrfKeyhash,
         uint256 _vrfFee,
         address _treasury,
-        address _weth,
-        address _oracleRegistry
-    ) VRFConsumerBase(_vrfCoordinator, _linkToken) {
-        require(_treasury != address(0), "cannot zero address");
+        address _sIlv,
+        address _ilvEthAggregator
+    ) external initializer {
+        require(
+            _treasury != address(0) && _ilvEthAggregator != address(0) && _sIlv != address(0),
+            "cannot zero address"
+        );
+
+        __Ownable_init();
+        __VRFConsumerBase_init(_vrfCoordinator, _linkToken);
 
         vrfKeyHash = _vrfKeyhash;
         vrfFee = _vrfFee;
-
-        emit TreasurySet(_treasury);
+        sIlv = _sIlv;
         treasury = _treasury;
-        weth = _weth;
-        oracleRegistry = _oracleRegistry;
 
         _initializePortraitMintInfo();
         _initializeAccessoryMintInfo();
     }
 
     /**
-     * @notice setFunction for Treasury Address.
+     * @dev Set portrait sale window.
+     * @dev only owner can call this function.
+     * @param _saleWindow New sale window.
+     */
+    function setPortraitSaleWindow(SaleWindow calldata _saleWindow) external onlyOwner {
+        require(_saleWindow.start < _saleWindow.end, "Invalid sale window");
+        portraitSaleWindow = _saleWindow;
+    }
+
+    /**
+     * @dev Set new treasury address.
      * @dev only owner can call this function.
      * @param treasury_ Treasury Address.
      */
@@ -138,17 +168,6 @@ contract Minter is VRFConsumerBase, Ownable {
         treasury = treasury_;
 
         emit TreasurySet(treasury_);
-    }
-
-    /**
-     * @notice setFunction for OracleRegistry Address.
-     * @dev only owner can call this function.
-     * @param oracleRegistry_ OracleRegistry Address.
-     */
-    function setOracleRegistry(address oracleRegistry_) external onlyOwner {
-        oracleRegistry = oracleRegistry_;
-
-        emit OracleRegistrySet(oracleRegistry_);
     }
 
     /**
@@ -167,17 +186,18 @@ contract Minter is VRFConsumerBase, Ownable {
     }
 
     /**
-     * @notice Mint for Portrait and Accesory items. Users will send ETH or sILV to mint itmes
+     * @dev Request minting Portrait and Accesory NFTs.
+     * @notice Users pay ETH or sILV to request minting
      * @param portraitMintParams portrait layer mint params.
      * @param accessorySemiRandomMintParams accessory layer semi random mint params.
      * @param accessoryFullRandomMintParams accessory layer full random mint params.
-     * @param paymentToken payment token address.
+     * @param useSIlv true to use sILV, false to use ETH.
      */
     function purchase(
         PortraitMintParams[] calldata portraitMintParams,
         AccessorySemiRandomMintParams[] calldata accessorySemiRandomMintParams,
         AccessoryFullRandomMintParams[] calldata accessoryFullRandomMintParams,
-        address paymentToken
+        bool useSIlv
     ) external payable {
         uint256 etherPrice;
 
@@ -185,9 +205,15 @@ contract Minter is VRFConsumerBase, Ownable {
 
         MintRequest storage mintRequest = mintRequests[requestId];
         require(mintRequest.requester == address(0), "Already requested");
-        mintRequest.requester = _msgSender();
+        mintRequest.requester = msg.sender;
 
         uint256 length = portraitMintParams.length;
+        if (length > 0) {
+            require(
+                block.timestamp >= portraitSaleWindow.start && block.timestamp >= portraitSaleWindow.end,
+                "Sale not started or ended"
+            );
+        }
         for (uint256 i = 0; i < length; i += 1) {
             PortraitMintParams memory param = portraitMintParams[i];
             require(param.amount > 0, "Invalid amount");
@@ -210,25 +236,32 @@ contract Minter is VRFConsumerBase, Ownable {
             mintRequest.accessoryFullRandomMintParams.push(param);
         }
 
-        if (paymentToken == ETHER_ADDRESS) {
-            require(msg.value == etherPrice, "Invalid price");
-            payable(treasury).transfer(etherPrice);
-        } else {
-            IOracle oracle = IOracle(IOracleRegistry(oracleRegistry).getOracle(weth, paymentToken));
-            oracle.update();
-            uint256 tokenAmount = oracle.consult(weth, etherPrice);
-            require(tokenAmount > 0, "Invalid price");
-            IERC20(paymentToken).safeTransferFrom(_msgSender(), treasury, tokenAmount);
+        if (etherPrice != 0) {
+            if (useSIlv) {
+                uint256 tokenAmount = _quoteSIlv(etherPrice);
+                IERC20Upgradeable(sIlv).safeTransferFrom(msg.sender, treasury, tokenAmount);
+            } else {
+                require(msg.value == etherPrice, "Invalid price");
+                payable(treasury).transfer(etherPrice);
+            }
         }
 
-        emit MintRequested(_msgSender(), requestId);
+        emit MintRequested(msg.sender, requestId);
     }
 
+    /**
+     * @dev Get mintable portrait and accessory infos with chainlink random number
+     * @param requestId Request id of mint request.
+     * @return requester Requester address
+     * @return seed Seed random number from chainlink
+     * @return portraits Mintable portrait on-chain metadata
+     * @return accessories Mintable accessory on-chain metadata
+     */
     function getMintResult(bytes32 requestId)
         external
         view
         returns (
-            address requestor,
+            address requester,
             uint256 seed,
             PortraitInfo[] memory portraits,
             AccessoryInfo[] memory accessories
@@ -236,7 +269,7 @@ contract Minter is VRFConsumerBase, Ownable {
     {
         require(mintRequests[requestId].randomNumber != 0, "No random number generated");
         MintRequest memory mintRequest = mintRequests[requestId];
-        requestor = mintRequest.requester;
+        requester = mintRequest.requester;
         seed = mintRequest.randomNumber;
 
         uint256 rand = seed;
@@ -255,6 +288,13 @@ contract Minter is VRFConsumerBase, Ownable {
         }
     }
 
+    /**
+     * @dev Internal method to get mintable portrait infos
+     * @param seed Seed random number to generate portrait infos
+     * @param portraitMintParams Users portrait mint params
+     * @return portraits Mintable portrait on-chain metadata
+     * @return lastRand Last random number to generate accessory metadata
+     */
     function _getPortraitsInfo(uint256 seed, PortraitMintParams[] memory portraitMintParams)
         internal
         view
@@ -293,6 +333,13 @@ contract Minter is VRFConsumerBase, Ownable {
         lastRand = rand;
     }
 
+    /**
+     * @dev Internal method to get mintable accessories infos
+     * @param seed Seed random number to generate portrait infos
+     * @param fullRandomMintParams Users accessory full mint params
+     * @param semiRandomMintParams Users accessory semi mint params
+     * @return accessories Mintable accessory on-chain metadata
+     */
     function _getAccessoriesInfo(
         uint256 seed,
         AccessoryFullRandomMintParams[] memory fullRandomMintParams,
@@ -356,12 +403,20 @@ contract Minter is VRFConsumerBase, Ownable {
         }
     }
 
-    function fulfillMintRequest(bytes32 requestId) external onlyOwner {
+    /**
+     * @dev Delete fulfilled mint requests
+     * @param requestId Request id
+     */
+    function deleteFulfilledMintRequest(bytes32 requestId) external onlyOwner {
         require(mintRequests[requestId].requester != address(0), "Request does not exist!");
         require(mintRequests[requestId].randomNumber != 0, "Random number not generated");
         delete mintRequests[requestId];
     }
 
+    /**
+     * @dev Initialize portrait mint information
+     * @notice Price and tier chances are constant
+     */
     function _initializePortraitMintInfo() internal {
         portraitMintInfo[BoxType.Virtual] = PortraitMintInfo({ price: 0, tierChances: [10000, 0, 0, 0, 0, 0] });
         portraitMintInfo[BoxType.Bronze] = PortraitMintInfo({
@@ -386,6 +441,10 @@ contract Minter is VRFConsumerBase, Ownable {
         });
     }
 
+    /**
+     * @dev Initialize accessory mint information
+     * @notice Price and tier chances are constant
+     */
     function _initializeAccessoryMintInfo() internal {
         accessoryMintInfo[BoxType.Virtual] = AccessoryMintInfo({
             randomPrice: 0,
@@ -418,4 +477,12 @@ contract Minter is VRFConsumerBase, Ownable {
             tierChances: [0, 100, 600, 2800, 6000, 10000]
         });
     }
+
+    function _quoteSIlv(uint256 etherAmount) internal view returns (uint256 sIlvAmount) {
+        uint256 ilvEthPrice = uint256(ilvETHAggregator.latestAnswer());
+        sIlvAmount = (ilvEthPrice * etherAmount) / 1e18;
+    }
+
+    /// @inheritdoc UUPSUpgradeable
+    function _authorizeUpgrade(address) internal virtual override onlyOwner {}
 }

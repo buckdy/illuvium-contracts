@@ -1,52 +1,66 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.4;
+pragma solidity 0.8.14;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "./BaseIlluvitar.sol";
 import "./DataTypes.sol";
 
 /**
-    @title PortraitLayer, this contract is inherited BaseIlluvitar contract,
-    this contract contains the function of combination and NFT metadata.
-    @author Dmitry Yakovlevich
+ * @title Portrait Layer
+ * @dev inherit BaseIlluvitar
+ * @author Dmitry Yakovlevich
  */
-
 contract PortraitLayer is BaseIlluvitar {
+    /// @dev Portrait Metadata struct
     struct Metadata {
-        bool initialized;
-        BoxType boxType;
-        uint8 tier;
+        BoxType boxType; // box type
+        uint8 tier; // tier
         // Bonded accessory token ids
-        uint256 skinId;
-        uint256 bodyId;
-        uint256 eyeId;
-        uint256 headId;
-        uint256 propsId;
+        uint256 skinId; // bonded skin id
+        uint256 bodyId; // bonded body id
+        uint256 eyeId; // bonded eye wear id
+        uint256 headId; // bonded head wear id
+        uint256 propsId; // bonded props id
     }
 
+    /// @dev Portrait metadata
     mapping(uint256 => Metadata) public metadata;
 
     /**
-     * @notice Initialize Base Layer.
-     * @param name_ NFT Name.
-     * @param symbol_ NFT Symbol.
-     * @param _minter NFT Minter Address.
+     * @dev Initialize Portrait Layer.
+     * @param name_ NFT Name
+     * @param symbol_ NFT Symbol
+     * @param imxMinter_ IMX Minter Address
      */
     function initialize(
         string memory name_,
         string memory symbol_,
-        address _minter
+        address imxMinter_
     ) external initializer {
-        __BaseIlluvitar_init(name_, symbol_, _minter);
+        __BaseIlluvitar_init(name_, symbol_, imxMinter_);
     }
 
+    /**
+     * @dev Mint Portrait with blueprint.
+     * @dev blueprint has format of `ab,c,d,e,f,g`
+     *      a : box type
+            b : tier
+            c : bonded skin id
+            d : bonded body id
+            e : bonded eye wear id
+            f : bonded head wear id
+            g : bonded props id
+     * @param to Recipient address
+     * @param tokenId Token id
+     * @param blueprint Portrait blueprint
+     */
     function _mint(
         address to,
         uint256 tokenId,
         bytes memory blueprint
     ) internal override {
         _safeMint(to, tokenId);
-        if (!metadata[tokenId].initialized) {
+        if (!metadataInitialized[tokenId]) {
             (
                 BoxType boxType,
                 uint8 tier,
@@ -57,7 +71,6 @@ contract PortraitLayer is BaseIlluvitar {
                 uint256 propsTokenId
             ) = _parseBlueprint(blueprint);
             metadata[tokenId] = Metadata({
-                initialized: true,
                 boxType: boxType,
                 tier: tier,
                 skinId: skinTokenId,
@@ -66,9 +79,11 @@ contract PortraitLayer is BaseIlluvitar {
                 headId: headTokenId,
                 propsId: propsTokenId
             });
+            metadataInitialized[tokenId] = true;
         }
     }
 
+    /// @dev Parse blueprint
     function _parseBlueprint(bytes memory blueprint)
         private
         pure

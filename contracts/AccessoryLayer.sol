@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.4;
+pragma solidity 0.8.14;
 
 import "./BaseIlluvitar.sol";
 import "./DataTypes.sol";
 
 /**
-    @title AccessoryLayer, this contract is inherited from BaseIlluvitar contract,
-    this will be deployed four times for different accessories(EYE, BODY, MOUTH, HEAD).
-    @author Dmitry Yakovlevich
+ * @title Accessory Layer
+ * @dev inherit BaseIlluvitar
+ * @author Dmitry Yakovlevich
  */
-
 contract AccessoryLayer is BaseIlluvitar {
+    /// @dev Accessory Metadata struct
     struct Metadata {
-        bool initialized;
-        BoxType boxType;
-        uint8 tier;
-        AccessoryType accessoryType;
+        BoxType boxType; // box type
+        uint8 tier; // tier
+        AccessoryType accessoryType; // accessory type
     }
 
+    /// @dev Accessory metadata
     mapping(uint256 => Metadata) public metadata;
 
     /**
@@ -34,23 +34,30 @@ contract AccessoryLayer is BaseIlluvitar {
         __BaseIlluvitar_init(name_, symbol_, imxMinter_);
     }
 
+    /**
+     * @dev Mint Accessory with blueprint.
+     * @dev blueprint has format of `abc`
+     *      a : box type
+            b : tier
+            c : accessory type
+     * @param to Recipient address
+     * @param tokenId Token id
+     * @param blueprint Accessory blueprint
+     */
     function _mint(
         address to,
         uint256 tokenId,
         bytes memory blueprint
     ) internal override {
         _safeMint(to, tokenId);
-        if (!metadata[tokenId].initialized) {
+        if (!metadataInitialized[tokenId]) {
             (BoxType boxType, uint8 tier, AccessoryType accessoryType) = _parseBlueprint(blueprint);
-            metadata[tokenId] = Metadata({
-                initialized: true,
-                boxType: boxType,
-                tier: tier,
-                accessoryType: accessoryType
-            });
+            metadata[tokenId] = Metadata({ boxType: boxType, tier: tier, accessoryType: accessoryType });
+            metadataInitialized[tokenId] = true;
         }
     }
 
+    /// @dev Parse blueprint
     function _parseBlueprint(bytes memory blueprint)
         private
         pure
