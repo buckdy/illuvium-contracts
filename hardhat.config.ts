@@ -138,9 +138,10 @@ const config: HardhatUserConfig = {
   dependencyCompiler: {
     paths: [
       "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
-      "@chainlink/contracts/src/v0.6/tests/VRFCoordinatorMock.sol",
       "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol",
       "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol",
+      "@chainlink/contracts/src/v0.6/tests/VRFCoordinatorMock.sol",
+      "@chainlink/contracts/src/v0.4/LinkToken.sol",
     ],
   },
 };
