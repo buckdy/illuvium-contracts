@@ -29,8 +29,8 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     ///      4: bonded 4 slot
     ///      5: bonded 5 slot
     uint8 public constant PORTRAIT_MASK = 6;
-    uint64 public constant FINISH_COUNT = 10;
-    uint64 public constant EXPRESSION_COUNT = 10;
+    uint8 public constant FINISH_COUNT = 2;
+    uint8 public constant EXPRESSION_COUNT = 2;
 
     /// @dev Portrait mint information
     mapping(BoxType => PortraitMintInfo) public portraitMintInfo;
@@ -106,8 +106,8 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         BoxType boxType;
         uint8 tier;
         uint16 background;
-        uint64 finish;
-        uint64 expression;
+        ExpressionType expression;
+        FinishType finish;
     }
 
     /// @dev Mintable accessory info
@@ -404,8 +404,14 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         portrait.tier = tier;
 
         (_rand, portrait.background) = _getQuotientAndRemainder16(_rand, backgroundCounts[tier]);
-        (_rand, portrait.finish) = _getQuotientAndRemainder64(_rand, FINISH_COUNT);
-        (_rand, portrait.expression) = _getQuotientAndRemainder64(_rand, EXPRESSION_COUNT);
+
+        uint256 expression;
+        uint8 finish;
+        (_rand, expression) = _getQuotientAndRemainder8(_rand, EXPRESSION_COUNT);
+        (_rand, finish) = _getQuotientAndRemainder8(_rand, FINISH_COUNT);
+
+        portrait.expression = ExpressionType(expression);
+        portrait.finish = FinishType(finish);
 
         nextTokenId += PORTRAIT_MASK;
         nextRand = uint256(keccak256(abi.encode(rand, rand)));
@@ -612,11 +618,6 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
             }
         }
         return 0;
-    }
-
-    /// @dev calculate quotient and remainder
-    function _getQuotientAndRemainder64(uint256 a, uint64 b) internal pure returns (uint256, uint64) {
-        return (a / b, uint64(a % b));
     }
 
     /// @dev calculate quotient and remainder

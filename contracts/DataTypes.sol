@@ -17,3 +17,13 @@ enum BoxType {
     Platinum,
     Diamond
 }
+
+enum ExpressionType {
+    Normal,
+    Expressed
+}
+
+enum FinishType {
+    Normal,
+    Holo
+}
