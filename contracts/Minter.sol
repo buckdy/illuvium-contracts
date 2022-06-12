@@ -20,9 +20,15 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     uint16 public constant MAX_TIER_CHANCE = 10000;
+    /// @dev tier0 ~ 5
     uint8 public constant TIER_COUNT = 6;
+    /// @dev 0: without accessory
+    ///      1: bonded 1 slot
+    ///      2: bonded 2 slot
+    ///      3: bonded 3 slot
+    ///      4: bonded 4 slot
+    ///      5: bonded 5 slot
     uint8 public constant PORTRAIT_MASK = 6;
-    uint64 public constant BACKGROUND_COUNT = 10;
     uint64 public constant FINISH_COUNT = 10;
     uint64 public constant EXPRESSION_COUNT = 10;
 
@@ -30,6 +36,9 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     mapping(BoxType => PortraitMintInfo) public portraitMintInfo;
     /// @dev Accessory mint information
     mapping(BoxType => AccessoryMintInfo) public accessoryMintInfo;
+    /// @dev Background count per tier
+    uint16[TIER_COUNT] public backgroundCounts;
+
     /// @dev User's mint requests
     mapping(bytes32 => MintRequest) public mintRequests;
     /// @dev Portrait sale window
@@ -96,7 +105,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         uint256 tokenId;
         BoxType boxType;
         uint8 tier;
-        uint64 background;
+        uint16 background;
         uint64 finish;
         uint64 expression;
     }
@@ -112,14 +121,14 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     /// @dev Portrait price and tier pick chances for each box type
     struct PortraitMintInfo {
         uint256 price; // price
-        uint16[6] tierChances; // tier chances
+        uint16[TIER_COUNT] tierChances; // tier chances
     }
 
     /// @dev Accessory semi and random price and tier pick chances for each box type
     struct AccessoryMintInfo {
         uint256 randomPrice; // full random price
         uint256 semiRandomPrice; // semi random price
-        uint16[6] tierChances; // tier chances
+        uint16[TIER_COUNT] tierChances; // tier chances
     }
 
     /// @dev Sale window
@@ -353,11 +362,11 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
             uint256 idx;
 
             for (uint256 i = 0; i < length; i += 1) {
-                PortraitMintParams memory mintParams = portraitMintParams[i];
-                uint256 amount = mintParams.amount;
+                PortraitMintParams memory mintParam = portraitMintParams[i];
+                uint256 amount = mintParam.amount;
 
                 for (uint256 j = 0; j < amount; j += 1) {
-                    (portraits[idx], nextRand, tokenId) = _getPortraitInfo(nextRand, mintParams, tokenId);
+                    (portraits[idx], nextRand, tokenId) = _getPortraitInfo(nextRand, mintParam, tokenId);
                     idx += 1;
                 }
             }
@@ -367,7 +376,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     /**
      * @dev Internal method to get portrait info
      * @param rand Random number
-     * @param mintParams Portrait mint params
+     * @param mintParam Portrait mint params
      * @param tokenId token id
      * @return portrait Mintable portrait on-chain metadata
      * @return nextRand Next random number
@@ -375,7 +384,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
      */
     function _getPortraitInfo(
         uint256 rand,
-        PortraitMintParams memory mintParams,
+        PortraitMintParams memory mintParam,
         uint256 tokenId
     )
         internal
@@ -388,21 +397,16 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     {
         (uint256 _rand, uint16 chance) = _getQuotientAndRemainder16(rand, MAX_TIER_CHANCE);
 
-        uint16[6] memory tierChances = portraitMintInfo[mintParams.boxType].tierChances;
-
         portrait.tokenId = tokenId;
-        portrait.boxType = mintParams.boxType;
+        portrait.boxType = mintParam.boxType;
 
-        (_rand, portrait.background) = _getQuotientAndRemainder64(_rand, BACKGROUND_COUNT);
+        uint8 tier = _getTier(portraitMintInfo[mintParam.boxType].tierChances, chance);
+        portrait.tier = tier;
+
+        (_rand, portrait.background) = _getQuotientAndRemainder16(_rand, backgroundCounts[tier]);
         (_rand, portrait.finish) = _getQuotientAndRemainder64(_rand, FINISH_COUNT);
         (_rand, portrait.expression) = _getQuotientAndRemainder64(_rand, EXPRESSION_COUNT);
 
-        for (uint8 k = 0; k < TIER_COUNT; k += 1) {
-            if (tierChances[k] > chance) {
-                portrait.tier = k;
-                break;
-            }
-        }
         nextTokenId += PORTRAIT_MASK;
         nextRand = uint256(keccak256(abi.encode(rand, rand)));
     }
@@ -431,18 +435,13 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     {
         (, uint16 chance) = _getQuotientAndRemainder16(rand, MAX_TIER_CHANCE);
 
-        uint16[6] memory tierChances = accessoryMintInfo[mintParam.boxType].tierChances;
-
         accessory.tokenId = tokenId;
         accessory.boxType = mintParam.boxType;
         accessory.accessoryType = mintParam.accessoryType;
 
-        for (uint8 k = 0; k < TIER_COUNT; k += 1) {
-            if (tierChances[k] > chance) {
-                accessory.tier = k;
-                break;
-            }
-        }
+        uint8 tier = _getTier(accessoryMintInfo[mintParam.boxType].tierChances, chance);
+        accessory.tier = tier;
+
         nextTokenId += 1;
         nextRand = uint256(keccak256(abi.encode(rand, rand)));
     }
@@ -471,18 +470,13 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     {
         (uint256 _rand, uint16 chance) = _getQuotientAndRemainder16(rand, MAX_TIER_CHANCE);
 
-        uint16[6] memory tierChances = accessoryMintInfo[mintParam.boxType].tierChances;
-
         accessory.tokenId = tokenId;
         accessory.boxType = mintParam.boxType;
         accessory.accessoryType = AccessoryType(uint8(_rand % 5));
 
-        for (uint8 k = 0; k < TIER_COUNT; k += 1) {
-            if (tierChances[k] > chance) {
-                accessory.tier = k;
-                break;
-            }
-        }
+        uint8 tier = _getTier(accessoryMintInfo[mintParam.boxType].tierChances, chance);
+        accessory.tier = tier;
+
         nextTokenId += 1;
         nextRand = uint256(keccak256(abi.encode(rand, rand)));
     }
@@ -565,6 +559,8 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
             price: 250e16,
             tierChances: [0, 200, 1000, 2500, 5000, 10000]
         });
+
+        backgroundCounts = [10, 10, 10, 10, 5, 5];
     }
 
     /**
@@ -607,6 +603,15 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     function _quoteSIlv(uint256 etherAmount) internal view returns (uint256 sIlvAmount) {
         uint256 ilvEthPrice = uint256(ilvETHAggregator.latestAnswer());
         sIlvAmount = (ilvEthPrice * etherAmount) / 1e18;
+    }
+
+    function _getTier(uint16[TIER_COUNT] memory tierChances, uint16 chance) internal pure returns (uint8) {
+        for (uint8 k = 0; k < TIER_COUNT; k += 1) {
+            if (tierChances[k] > chance) {
+                return k;
+            }
+        }
+        return 0;
     }
 
     /// @dev calculate quotient and remainder
