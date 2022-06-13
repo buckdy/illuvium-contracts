@@ -21,6 +21,10 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
 
     uint16 public constant MAX_TIER_CHANCE = 10000;
     uint8 public constant TIER_COUNT = 6;
+    uint8 public constant PORTRAIT_MASK = 6;
+    uint64 public constant BACKGROUND_COUNT = 10;
+    uint64 public constant FINISH_COUNT = 10;
+    uint64 public constant EXPRESSION_COUNT = 10;
 
     /// @dev Portrait mint information
     mapping(BoxType => PortraitMintInfo) public portraitMintInfo;
@@ -41,6 +45,10 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     bytes32 public vrfKeyHash;
     /// @dev chainlink VRF fee
     uint256 public vrfFee;
+    /// @dev Next portrait token id to mint
+    uint256 public nextPortraitTokenId;
+    /// @dev Next accessory token id to mint
+    uint256 public nextAccessoryTokenId;
 
     /* ======== EVENTS ======== */
     /// @dev Emitted when treasury updated.
@@ -74,23 +82,31 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     struct MintRequest {
         address requester; // requester address
         PortraitMintParams[] portraitMintParams; // portrait mint params
+        uint256 portraitAmount; // total portrait amount
         AccessorySemiRandomMintParams[] accessorySemiRandomMintParams; // accessory semi mint params
         AccessoryFullRandomMintParams[] accessoryFullRandomMintParams; // accessory full mint params
+        uint256 accessoryAmount; // total accessory amount
         uint256 randomNumber; // random number from chainlink
+        uint256 portraitStartTokenId;
+        uint256 accessoryStartTokenId;
     }
 
     /// @dev Mintable portrait info
     struct PortraitInfo {
-        BoxType boxType; // box type
-        uint8 tier; // tier
-        uint256 rand; // extra random number to generate another off-chain data
+        uint256 tokenId;
+        BoxType boxType;
+        uint8 tier;
+        uint64 background;
+        uint64 finish;
+        uint64 expression;
     }
 
     /// @dev Mintable accessory info
     struct AccessoryInfo {
-        BoxType boxType; // box type
-        AccessoryType accessoryType; // accessory type
-        uint8 tier; // tier
+        uint256 tokenId;
+        BoxType boxType;
+        AccessoryType accessoryType;
+        uint8 tier;
     }
 
     /// @dev Portrait price and tier pick chances for each box type
@@ -144,6 +160,8 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         sIlv = _sIlv;
         treasury = _treasury;
         illuvitarsPriceOracle = IlluvitarsPriceOracle(_illuvitarsPriceOracle);
+        nextPortraitTokenId = 1;
+        nextAccessoryTokenId = 1;
 
         _initializePortraitMintInfo();
         _initializeAccessoryMintInfo();
@@ -215,18 +233,28 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
                 "Sale not started or ended"
             );
         }
+
+        uint256 portraitAmount;
         for (uint256 i = 0; i < length; i += 1) {
             PortraitMintParams memory param = portraitMintParams[i];
             require(param.amount > 0, "Invalid amount");
             etherPrice += uint256(param.amount) * portraitMintInfo[param.boxType].price;
+            portraitAmount += uint256(param.amount);
             mintRequest.portraitMintParams.push(param);
         }
 
+        mintRequest.portraitAmount = portraitAmount;
+        mintRequest.portraitStartTokenId = nextPortraitTokenId;
+        nextPortraitTokenId += PORTRAIT_MASK * portraitAmount;
+
         length = accessorySemiRandomMintParams.length;
+
+        uint256 accessoryAmount;
         for (uint256 i = 0; i < length; i += 1) {
             AccessorySemiRandomMintParams memory param = accessorySemiRandomMintParams[i];
             require(param.amount > 0, "Invalid amount");
             etherPrice += uint256(param.amount) * accessoryMintInfo[param.boxType].semiRandomPrice;
+            accessoryAmount += uint256(param.amount);
             mintRequest.accessorySemiRandomMintParams.push(param);
         }
 
@@ -234,8 +262,13 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         for (uint256 i = 0; i < length; i += 1) {
             AccessoryFullRandomMintParams memory param = accessoryFullRandomMintParams[i];
             etherPrice += uint256(param.amount) * accessoryMintInfo[param.boxType].randomPrice;
+            accessoryAmount += uint256(param.amount);
             mintRequest.accessoryFullRandomMintParams.push(param);
         }
+
+        mintRequest.accessoryAmount = accessoryAmount;
+        mintRequest.accessoryStartTokenId = nextAccessoryTokenId;
+        nextAccessoryTokenId += accessoryAmount;
 
         if (etherPrice != 0) {
             if (useSIlv) {
@@ -275,7 +308,11 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
 
         uint256 rand = seed;
         if (mintRequest.portraitMintParams.length > 0) {
-            (portraits, rand) = _getPortraitsInfo(rand, mintRequest.portraitMintParams);
+            (portraits, rand) = _getPortraitsInfo(
+                rand,
+                mintRequest.portraitMintParams,
+                mintRequest.portraitStartTokenId
+            );
         }
 
         if (
@@ -284,7 +321,8 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
             accessories = _getAccessoriesInfo(
                 rand,
                 mintRequest.accessoryFullRandomMintParams,
-                mintRequest.accessorySemiRandomMintParams
+                mintRequest.accessorySemiRandomMintParams,
+                mintRequest.accessoryStartTokenId
             );
         }
     }
@@ -294,13 +332,13 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
      * @param seed Seed random number to generate portrait infos
      * @param portraitMintParams Users portrait mint params
      * @return portraits Mintable portrait on-chain metadata
-     * @return lastRand Last random number to generate accessory metadata
+     * @return nextRand Last random number to generate accessory metadata
      */
-    function _getPortraitsInfo(uint256 seed, PortraitMintParams[] memory portraitMintParams)
-        internal
-        view
-        returns (PortraitInfo[] memory portraits, uint256 lastRand)
-    {
+    function _getPortraitsInfo(
+        uint256 seed,
+        PortraitMintParams[] memory portraitMintParams,
+        uint256 startTokenId
+    ) internal view returns (PortraitInfo[] memory portraits, uint256 nextRand) {
         uint256 portraitAmount;
 
         uint256 length = portraitMintParams.length;
@@ -308,30 +346,146 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
             portraitAmount += portraitMintParams[i].amount;
         }
 
-        uint256 rand = seed;
+        uint256 tokenId = startTokenId;
+        nextRand = seed;
+
         if (portraitAmount > 0) {
             portraits = new PortraitInfo[](portraitAmount);
+            uint256 idx;
 
             for (uint256 i = 0; i < length; i += 1) {
-                uint256 amount = portraitMintParams[i].amount;
+                PortraitMintParams memory mintParams = portraitMintParams[i];
+                uint256 amount = mintParams.amount;
+
                 for (uint256 j = 0; j < amount; j += 1) {
-                    rand = uint256(keccak256(abi.encode(rand, rand)));
-                    uint16 chance = uint16(rand % MAX_TIER_CHANCE);
-                    uint16[6] memory tierChances = portraitMintInfo[portraitMintParams[i].boxType].tierChances;
-                    for (uint8 k = 0; k < TIER_COUNT; k += 1) {
-                        if (tierChances[k] > chance) {
-                            portraits[i] = PortraitInfo({
-                                boxType: portraitMintParams[i].boxType,
-                                tier: k,
-                                rand: rand / MAX_TIER_CHANCE
-                            });
-                            break;
-                        }
-                    }
+                    (portraits[idx], nextRand, tokenId) = _getPortraitInfo(nextRand, mintParams, tokenId);
+                    idx += 1;
                 }
             }
         }
-        lastRand = rand;
+    }
+
+    /**
+     * @dev Internal method to get portrait info
+     * @param rand Random number
+     * @param mintParams Portrait mint params
+     * @param tokenId token id
+     * @return portrait Mintable portrait on-chain metadata
+     * @return nextRand Next random number
+     * @return nextTokenId Next item token id
+     */
+    function _getPortraitInfo(
+        uint256 rand,
+        PortraitMintParams memory mintParams,
+        uint256 tokenId
+    )
+        internal
+        view
+        returns (
+            PortraitInfo memory portrait,
+            uint256 nextRand,
+            uint256 nextTokenId
+        )
+    {
+        (uint256 _rand, uint16 chance) = _getQuotientAndRemainder16(rand, MAX_TIER_CHANCE);
+
+        uint16[6] memory tierChances = portraitMintInfo[mintParams.boxType].tierChances;
+
+        portrait.tokenId = tokenId;
+        portrait.boxType = mintParams.boxType;
+
+        (_rand, portrait.background) = _getQuotientAndRemainder64(_rand, BACKGROUND_COUNT);
+        (_rand, portrait.finish) = _getQuotientAndRemainder64(_rand, FINISH_COUNT);
+        (_rand, portrait.expression) = _getQuotientAndRemainder64(_rand, EXPRESSION_COUNT);
+
+        for (uint8 k = 0; k < TIER_COUNT; k += 1) {
+            if (tierChances[k] > chance) {
+                portrait.tier = k;
+                break;
+            }
+        }
+        nextTokenId += PORTRAIT_MASK;
+        nextRand = uint256(keccak256(abi.encode(rand, rand)));
+    }
+
+    /**
+     * @dev Internal method to get semi accessory info
+     * @param rand Random number
+     * @param mintParam Accessory semi mint params
+     * @param tokenId token id
+     * @return accessory Mintable accessory on-chain metadata
+     * @return nextRand Next random number
+     * @return nextTokenId Next item token id
+     */
+    function _getSemiAcccessoryInfo(
+        uint256 rand,
+        AccessorySemiRandomMintParams memory mintParam,
+        uint256 tokenId
+    )
+        internal
+        view
+        returns (
+            AccessoryInfo memory accessory,
+            uint256 nextRand,
+            uint256 nextTokenId
+        )
+    {
+        (, uint16 chance) = _getQuotientAndRemainder16(rand, MAX_TIER_CHANCE);
+
+        uint16[6] memory tierChances = accessoryMintInfo[mintParam.boxType].tierChances;
+
+        accessory.tokenId = tokenId;
+        accessory.boxType = mintParam.boxType;
+        accessory.accessoryType = mintParam.accessoryType;
+
+        for (uint8 k = 0; k < TIER_COUNT; k += 1) {
+            if (tierChances[k] > chance) {
+                accessory.tier = k;
+                break;
+            }
+        }
+        nextTokenId += 1;
+        nextRand = uint256(keccak256(abi.encode(rand, rand)));
+    }
+
+    /**
+     * @dev Internal method to get full accessory info
+     * @param rand Random number
+     * @param mintParam Accessory full mint params
+     * @param tokenId token id
+     * @return accessory Mintable accessory on-chain metadata
+     * @return nextRand Next random number
+     * @return nextTokenId Next item token id
+     */
+    function _getFullAcccessoryInfo(
+        uint256 rand,
+        AccessoryFullRandomMintParams memory mintParam,
+        uint256 tokenId
+    )
+        internal
+        view
+        returns (
+            AccessoryInfo memory accessory,
+            uint256 nextRand,
+            uint256 nextTokenId
+        )
+    {
+        (uint256 _rand, uint16 chance) = _getQuotientAndRemainder16(rand, MAX_TIER_CHANCE);
+
+        uint16[6] memory tierChances = accessoryMintInfo[mintParam.boxType].tierChances;
+
+        accessory.tokenId = tokenId;
+        accessory.boxType = mintParam.boxType;
+        accessory.accessoryType = AccessoryType(uint8(_rand % 5));
+
+        for (uint8 k = 0; k < TIER_COUNT; k += 1) {
+            if (tierChances[k] > chance) {
+                accessory.tier = k;
+                break;
+            }
+        }
+        nextTokenId += 1;
+        nextRand = uint256(keccak256(abi.encode(rand, rand)));
     }
 
     /**
@@ -344,7 +498,8 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     function _getAccessoriesInfo(
         uint256 seed,
         AccessoryFullRandomMintParams[] memory fullRandomMintParams,
-        AccessorySemiRandomMintParams[] memory semiRandomMintParams
+        AccessorySemiRandomMintParams[] memory semiRandomMintParams,
+        uint256 startTokenId
     ) internal view returns (AccessoryInfo[] memory accessories) {
         uint256 fullRandomAmount;
         uint256 semiRandomAmount;
@@ -353,65 +508,36 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
             fullRandomAmount += fullRandomMintParams[i].amount;
         }
 
+        uint256 tokenId = startTokenId;
         length = semiRandomMintParams.length;
         for (uint256 i = 0; i < length; i += 1) {
             semiRandomAmount += semiRandomMintParams[i].amount;
         }
 
-        uint256 rand = seed;
+        uint256 idx;
+        uint256 nextRand = seed;
         if (semiRandomAmount > 0 || fullRandomAmount > 0) {
             accessories = new AccessoryInfo[](semiRandomAmount + fullRandomAmount);
 
             for (uint256 i = 0; i < length; i += 1) {
-                uint256 amount = semiRandomMintParams[i].amount;
+                AccessorySemiRandomMintParams memory mintParam = semiRandomMintParams[i];
+                uint256 amount = mintParam.amount;
                 for (uint256 j = 0; j < amount; j += 1) {
-                    rand = uint256(keccak256(abi.encode(rand, rand)));
-                    uint16 chance = uint16(rand % MAX_TIER_CHANCE);
-                    uint16[6] memory tierChances = accessoryMintInfo[semiRandomMintParams[i].boxType].tierChances;
-                    for (uint8 k = 0; k < TIER_COUNT; k += 1) {
-                        if (tierChances[k] > chance) {
-                            accessories[i] = AccessoryInfo({
-                                boxType: semiRandomMintParams[i].boxType,
-                                accessoryType: semiRandomMintParams[i].accessoryType,
-                                tier: k
-                            });
-                            break;
-                        }
-                    }
+                    (accessories[idx], nextRand, tokenId) = _getSemiAcccessoryInfo(nextRand, mintParam, tokenId);
+                    idx += 1;
                 }
             }
 
             length = fullRandomMintParams.length;
             for (uint256 i = 0; i < length; i += 1) {
-                uint256 amount = fullRandomMintParams[i].amount;
+                AccessoryFullRandomMintParams memory mintParam = fullRandomMintParams[i];
+                uint256 amount = mintParam.amount;
                 for (uint256 j = 0; j < amount; j += 1) {
-                    rand = uint256(keccak256(abi.encode(rand, rand)));
-                    uint16 chance = uint16(rand % MAX_TIER_CHANCE);
-                    AccessoryType accessoryType = AccessoryType(uint8((rand / MAX_TIER_CHANCE) % 5));
-                    uint16[6] memory tierChances = accessoryMintInfo[fullRandomMintParams[i].boxType].tierChances;
-                    for (uint8 k = 0; k < TIER_COUNT; k += 1) {
-                        if (tierChances[k] > chance) {
-                            accessories[i + semiRandomAmount] = AccessoryInfo({
-                                boxType: fullRandomMintParams[i].boxType,
-                                accessoryType: accessoryType,
-                                tier: k
-                            });
-                            break;
-                        }
-                    }
+                    (accessories[idx], nextRand, tokenId) = _getFullAcccessoryInfo(nextRand, mintParam, tokenId);
+                    idx += 1;
                 }
             }
         }
-    }
-
-    /**
-     * @dev Delete fulfilled mint requests
-     * @param requestId Request id
-     */
-    function deleteFulfilledMintRequest(bytes32 requestId) external onlyOwner {
-        require(mintRequests[requestId].requester != address(0), "Request does not exist!");
-        require(mintRequests[requestId].randomNumber != 0, "Random number not generated");
-        delete mintRequests[requestId];
     }
 
     /**
@@ -477,6 +603,21 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
             semiRandomPrice: 50e16,
             tierChances: [0, 100, 600, 2800, 6000, 10000]
         });
+    }
+
+    /// @dev calculate quotient and remainder
+    function _getQuotientAndRemainder64(uint256 a, uint64 b) internal pure returns (uint256, uint64) {
+        return (a / b, uint64(a % b));
+    }
+
+    /// @dev calculate quotient and remainder
+    function _getQuotientAndRemainder8(uint256 a, uint8 b) internal pure returns (uint256, uint8) {
+        return (a / b, uint8(a % b));
+    }
+
+    /// @dev calculate quotient and remainder
+    function _getQuotientAndRemainder16(uint256 a, uint16 b) internal pure returns (uint256, uint16) {
+        return (a / b, uint16(a % b));
     }
 
     /// @inheritdoc UUPSUpgradeable

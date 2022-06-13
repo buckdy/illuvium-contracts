@@ -1,7 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
-import { utils } from "ethers";
 import { AccessoryLayer } from "../typechain";
 import { BoxType, AccessoryType, makeAccessoryMintingBlob } from "./utils";
 
