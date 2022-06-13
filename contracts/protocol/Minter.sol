@@ -5,9 +5,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "./chainlink/VRFConsumerBaseUpgradeable.sol";
-import "./DataTypes.sol";
-import "./interfaces/IAggregator.sol";
+import "../chainlink/VRFConsumerBaseUpgradeable.sol";
+import "../DataTypes.sol";
+import "../interfaces/PriceOracleSpec.sol";
 
 /**
  * @title Minter
@@ -40,7 +40,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     /// @dev treasury address
     address public treasury;
     /// @dev ILV/ETH Chainlink price feed address
-    IAggregator public ilvETHAggregator;
+    IlluvitarsPriceOracle public illuvitarsPriceOracle;
     /// @dev chainlink VRF key hash
     bytes32 public vrfKeyHash;
     /// @dev chainlink VRF fee
@@ -136,7 +136,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
      * @param _vrfFee Chainlink VRF Fee
      * @param _treasury Treasury address
      * @param _sIlv sILV2 token address
-     * @param _ilvEthAggregator ILV/ETH Chainlink price feed
+     * @param _illuvitarsPriceOracle ILV/ETH Chainlink price feed base illuvitars price oracle
      */
     function initialize(
         address _vrfCoordinator,
@@ -145,10 +145,10 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         uint256 _vrfFee,
         address _treasury,
         address _sIlv,
-        address _ilvEthAggregator
+        address _illuvitarsPriceOracle
     ) external initializer {
         require(
-            _treasury != address(0) && _ilvEthAggregator != address(0) && _sIlv != address(0),
+            _treasury != address(0) && _illuvitarsPriceOracle != address(0) && _sIlv != address(0),
             "cannot zero address"
         );
 
@@ -159,6 +159,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         vrfFee = _vrfFee;
         sIlv = _sIlv;
         treasury = _treasury;
+        illuvitarsPriceOracle = IlluvitarsPriceOracle(_illuvitarsPriceOracle);
         nextPortraitTokenId = 1;
         nextAccessoryTokenId = 1;
 
@@ -271,7 +272,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
 
         if (etherPrice != 0) {
             if (useSIlv) {
-                uint256 tokenAmount = _quoteSIlv(etherPrice);
+                uint256 tokenAmount = uint256(illuvitarsPriceOracle.ethToIlv(etherPrice));
                 IERC20Upgradeable(sIlv).safeTransferFrom(msg.sender, treasury, tokenAmount);
             } else {
                 require(msg.value == etherPrice, "Invalid price");
@@ -602,11 +603,6 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
             semiRandomPrice: 50e16,
             tierChances: [0, 100, 600, 2800, 6000, 10000]
         });
-    }
-
-    function _quoteSIlv(uint256 etherAmount) internal view returns (uint256 sIlvAmount) {
-        uint256 ilvEthPrice = uint256(ilvETHAggregator.latestAnswer());
-        sIlvAmount = (ilvEthPrice * etherAmount) / 1e18;
     }
 
     /// @dev calculate quotient and remainder
