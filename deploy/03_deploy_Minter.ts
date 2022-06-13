@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { constants } from "ethers";
-import { deployProxy, deploy } from "./include/utils";
+import { deployProxy, deploy } from "../scripts/include/deployment_routines";
 
 module.exports = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await hre.getNamedAccounts();

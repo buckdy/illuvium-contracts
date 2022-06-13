@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { deployProxy, deploy } from "./include/utils";
+import { deployProxy, deploy } from "../scripts/include/deployment_routines";
 
 module.exports = async function (hre: HardhatRuntimeEnvironment) {
   const { imxMinter } = await hre.getNamedAccounts();
