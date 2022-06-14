@@ -611,11 +611,6 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     }
 
     /// @dev calculate quotient and remainder
-    function _getQuotientAndRemainder8(uint256 a, uint8 b) internal pure returns (uint256, uint8) {
-        return (a / b, uint8(a % b));
-    }
-
-    /// @dev calculate quotient and remainder
     function _getQuotientAndRemainder16(uint256 a, uint16 b) internal pure returns (uint256, uint16) {
         return (a / b, uint16(a % b));
     }

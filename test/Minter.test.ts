@@ -3,8 +3,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { constants, utils, BigNumberish } from "ethers";
 import { Minter, VRFCoordinatorMock, LinkToken } from "../typechain";
-import { generateRandomAddress, generatePurchaseParams, random_int } from "./utils";
-import { doesNotMatch } from "assert";
+import { generateRandomAddress, generatePurchaseParams, random_int, random_bn256 } from "./utils";
 
 describe("Minter", () => {
   let owner: SignerWithAddress;
@@ -179,14 +178,15 @@ describe("Minter", () => {
 
       expect(requester).to.be.equal(await alice.getAddress());
 
-      const randomNumber = random_int(1, 50000);
+      let randomNumber = random_bn256();
+      randomNumber = randomNumber.eq("0") ? randomNumber.add("1") : randomNumber;
       await expect(
         vrfCoordinator
           .connect(randomnessFulfiller)
           .callBackWithRandomness(requestId, randomNumber, minterContract.address),
       )
         .to.emit(minterContract, "RequestFulfilled")
-        .withArgs(requestId, randomNumber);
+        .withArgs(requestId, randomNumber.toString());
 
       await minterContract.getMintResult(requestId, { gasLimit: constants.MaxUint256 });
     });

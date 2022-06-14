@@ -1,6 +1,9 @@
 import { Wallet, utils, BigNumber } from "ethers";
 import type { BigNumberish } from "ethers";
 
+// crypto is used to get enough randomness for the random BN generation
+import { randomBytes } from "crypto";
+
 // we use assert to fail fast in case of any errors
 import assert from "assert";
 
@@ -80,6 +83,12 @@ export const portraitPrices = {
 export const random_int = (from: number, to: number): number => {
   assert(from <= to, '"from" must not exceed "to"');
   return Math.floor(from + Math.random() * (to - from));
+};
+
+// generates random BN in a [0, 2^256) range: r ∈ [0, 2^256)
+export const random_bn256 = (): BigNumber => {
+  // use crypto.randomBytes to generate 256 bits of randomness and wrap it into BN
+  return BigNumber.from(randomBytes(32));
 };
 
 // picks random element from the array
