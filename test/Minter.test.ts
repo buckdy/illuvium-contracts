@@ -180,7 +180,11 @@ describe("Minter", () => {
       expect(requester).to.be.equal(await alice.getAddress());
 
       const randomNumber = random_int(1, 50000);
-      await expect(vrfCoordinator.callBackWithRandomness(requestId, randomNumber, minterContract.address))
+      await expect(
+        vrfCoordinator
+          .connect(randomnessFulfiller)
+          .callBackWithRandomness(requestId, randomNumber, minterContract.address),
+      )
         .to.emit(minterContract, "RequestFulfilled")
         .withArgs(requestId, randomNumber);
 
