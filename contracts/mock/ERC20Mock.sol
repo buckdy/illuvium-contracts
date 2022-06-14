@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "../ERC20Impl.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @title ERC20 Mock
@@ -11,12 +11,7 @@ import "../ERC20Impl.sol";
  *
  * @author Basil Gorin
  */
-contract ERC20Mock is IdentifiableToken, ERC20Impl {
-    /**
-     * @inheritdoc IdentifiableToken
-     */
-    uint256 public override TOKEN_UID = 0x9246211c0c1c75405f68424667596bc7067a6af2d90b20a6a844de948a22de33;
-
+contract ERC20Mock is ERC20 {
     /// @dev Defines if balanceOf() return value should be overridden
     bool private _balanceOfOverride;
 
@@ -41,12 +36,7 @@ contract ERC20Mock is IdentifiableToken, ERC20Impl {
      * @param _name token name (ERC20Metadata)
      * @param _symbol toke symbol (ERC20Metadata)
      */
-    constructor(string memory _name, string memory _symbol) ERC20Impl(_name, _symbol) {}
-
-    // allows to modify TOKEN_UID
-    function setUid(uint256 _uid) public {
-        TOKEN_UID = _uid;
-    }
+    constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol) {}
 
     /// @dev Sets balanceOf() override
     function setBalanceOfOverride(uint256 _value) public {
