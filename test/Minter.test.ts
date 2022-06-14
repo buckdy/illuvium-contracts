@@ -188,6 +188,7 @@ describe("Minter", () => {
         .to.emit(minterContract, "RequestFulfilled")
         .withArgs(requestId, randomNumber.toString());
 
+      // TODO: Need to verify this result somehow (compare with JS implementation?)
       await minterContract.getMintResult(requestId, { gasLimit: constants.MaxUint256 });
     });
   });

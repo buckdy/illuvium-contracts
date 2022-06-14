@@ -100,7 +100,7 @@ abstract contract UpgradeableAccessControl is UUPSUpgradeable {
      * @dev Bitmask representing all the possible permissions (super admin role)
      * @dev Has all the bits are enabled (2^256 - 1 value)
      */
-    uint256 private constant FULL_PRIVILEGES_MASK = type(uint256).max; // before 0.8.0: uint256(-1) overflows to 0xFFFF...
+    uint256 private constant FULL_PRIVILEGES_MASK = type(uint256).max;
 
     /**
      * @dev Fired in updateRole() and updateFeatures()
