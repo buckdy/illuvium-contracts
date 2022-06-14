@@ -229,7 +229,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         uint256 length = portraitMintParams.length;
         if (length > 0) {
             require(
-                block.timestamp >= portraitSaleWindow.start && block.timestamp >= portraitSaleWindow.end,
+                block.timestamp >= portraitSaleWindow.start && block.timestamp <= portraitSaleWindow.end,
                 "Sale not started or ended"
             );
         }
