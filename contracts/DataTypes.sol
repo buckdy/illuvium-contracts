@@ -20,7 +20,8 @@ enum BoxType {
 
 enum ExpressionType {
     Normal,
-    Expressed
+    ExpressionA,
+    ExpressionB
 }
 
 enum FinishType {
