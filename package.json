@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "author": "Dmitry Yakovlevich",
   "devDependencies": {
+    "@chainlink/contracts": "^0.2.2",
     "@codechecks/client": "^0.1.11",
     "@commitlint/cli": "^13.2.0",
     "@commitlint/config-conventional": "^13.2.0",
@@ -13,12 +14,16 @@
     "@ethersproject/bytes": "^5.4.0",
     "@ethersproject/providers": "^5.4.5",
     "@imtbl/imx-contracts": "^1.0.1",
+    "@imtbl/imx-sdk": "1.17.0",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^3.0.3",
+    "@nomiclabs/hardhat-truffle5": "^2.0.6",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
-    "@openzeppelin/contracts": "^4.3.2",
+    "@nomiclabs/hardhat-web3": "^2.0.0",
+    "@openzeppelin/contracts": "^4.6.0",
     "@openzeppelin/contracts-upgradeable": "^4.3.2",
     "@openzeppelin/hardhat-upgrades": "^1.12.0",
+    "@openzeppelin/test-helpers": "^0.5.15",
     "@typechain/ethers-v5": "^7.1.2",
     "@typechain/hardhat": "^2.3.0",
     "@types/chai": "^4.2.22",
@@ -30,6 +35,7 @@
     "chai": "^4.3.4",
     "commitizen": "^4.2.4",
     "cross-env": "^7.0.3",
+    "crypto": "^1.0.1",
     "cz-conventional-changelog": "^3.3.0",
     "dotenv": "^10.0.0",
     "eslint": "^7.32.0",
@@ -88,9 +94,5 @@
     "prettier:check": "prettier --check --config ./.prettierrc.yaml \"**/*.{js,json,md,sol,ts}\"",
     "test": "hardhat test",
     "typechain": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat typechain"
-  },
-  "dependencies": {
-    "@chainlink/contracts": "^0.2.2",
-    "@imtbl/imx-sdk": "1.17.0"
   }
 }

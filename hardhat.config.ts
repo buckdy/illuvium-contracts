@@ -1,4 +1,5 @@
 import "@nomiclabs/hardhat-waffle";
+import "@nomiclabs/hardhat-truffle5";
 import "@typechain/hardhat";
 import "@nomiclabs/hardhat-etherscan";
 import "hardhat-gas-reporter";
@@ -70,6 +71,15 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
+        version: "0.6.6",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
         version: "0.4.24",
         settings: {
           optimizer: {
@@ -99,6 +109,7 @@ const config: HardhatUserConfig = {
       1: 0,
     },
     imxMinter: {
+      1: "0x5FDCCA53617f4d2b9134B29090C87D01058e27e9",
       3: "0x4527BE8f31E2ebFbEF4fCADDb5a17447B27d2aef",
     },
     linkToken: {
@@ -110,6 +121,17 @@ const config: HardhatUserConfig = {
     vrfCoordinator: {
       3: "0xf8046Eb28d62D12AB1b55e8e6A9742C1b1F51164",
     },
+    // Escrowed Illuvium 2 ERC20 (sILV2)
+    sIlvAddress: {
+      mainnet: "0x7E77dCb127F99ECe88230a64Db8d595F31F1b068",
+      rinkeby: "0xbfF2129e06a7e76323e7ceA754eBD045Bc3E82A5",
+      ropsten: "0xCe34A06141B2131aD6C6E293275d22123bcf1865",
+    },
+    // Chainlink Price Feed Aggregator
+    chainlinkAggregator: {
+      mainnet: "0xf600984CCa37cd562E74E3EE514289e3613ce8E4",
+      rinkeby: "0x48731cF7e84dc94C5f84577882c14Be11a5B7456",
+    },
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
@@ -118,7 +140,13 @@ const config: HardhatUserConfig = {
     paths: [
       "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
       "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol",
+      "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol",
+      "@chainlink/contracts/src/v0.6/tests/VRFCoordinatorMock.sol",
+      "@chainlink/contracts/src/v0.4/LinkToken.sol",
     ],
+  },
+  mocha: {
+    timeout: 100000000,
   },
 };
 
