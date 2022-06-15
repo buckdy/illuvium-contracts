@@ -7,9 +7,9 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  * @title ERC20 Mock
  *
  * @notice Zeppelin-based ERC20 Mock simulates an ERC20 token, used for testing purposes;
- *      it still has restricted access to the mint() function
+ *      it has unrestricted access to the mint() function
  *
- * @author Basil Gorin
+ * @author Basil Gorin, Yuri Fernandes
  */
 contract ERC20Mock is ERC20 {
     /// @dev Defines if balanceOf() return value should be overridden
@@ -112,5 +112,9 @@ contract ERC20Mock is ERC20 {
         uint256 value
     ) public {
         _approve(owner, spender, value);
+    }
+
+    function mint(address account, uint256 amount) public {
+        _mint(account, amount);
     }
 }
