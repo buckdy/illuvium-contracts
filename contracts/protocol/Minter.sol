@@ -41,11 +41,15 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     mapping(BoxType => AccessoryMintInfo) public accessoryMintInfo;
     /// @dev Background tier chances
     mapping(uint8 => mapping(BoxType => uint16[MAX_TIER])) public backgroundTierChances;
+    /// @dev expression probability
     uint16[EXPRESSION_COUNT] public expressionProbability;
+    /// @dev stage probability
     uint16[STAGE_COUNT] public stageProbability;
 
     /// @dev Background count per tier
-    uint16[TIER_COUNT] public backgroundCounts;
+    uint8[TIER_COUNT] public backgroundCounts;
+    /// @dev Illuvial count per tier
+    uint8[TIER_COUNT] public illuvialCounts;
 
     /// @dev User's mint requests
     mapping(bytes32 => MintRequest) public mintRequests;
@@ -78,34 +82,34 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     /* ======== STRUCT ======== */
     /// @dev Portrait mint params
     struct PortraitMintParams {
-        BoxType boxType; // box type
-        uint64 amount; // portrait amount to mint
+        BoxType boxType;
+        uint64 amount;
     }
 
     /// @dev Accessory semi random mint params
     struct AccessorySemiRandomMintParams {
-        AccessoryType accessoryType; // accessory type
-        BoxType boxType; // box type
-        uint64 amount; // accessory amount to mint
+        AccessoryType accessoryType;
+        BoxType boxType;
+        uint64 amount;
     }
 
     /// @dev Accessory full random mint params
     struct AccessoryFullRandomMintParams {
-        BoxType boxType; // box type
-        uint64 amount; // portrait amount to mint
+        BoxType boxType;
+        uint64 amount;
     }
 
     /// @dev User's mint request data
     struct MintRequest {
-        address requester; // requester address
-        PortraitMintParams[] portraitMintParams; // portrait mint params
+        address requester;
+        PortraitMintParams[] portraitMintParams;
         uint256 portraitAmount; // total portrait amount
-        AccessorySemiRandomMintParams[] accessorySemiRandomMintParams; // accessory semi mint params
-        AccessoryFullRandomMintParams[] accessoryFullRandomMintParams; // accessory full mint params
+        AccessorySemiRandomMintParams[] accessorySemiRandomMintParams;
+        AccessoryFullRandomMintParams[] accessoryFullRandomMintParams;
         uint256 accessoryAmount; // total accessory amount
         uint256 randomNumber; // random number from chainlink
-        uint256 portraitStartTokenId;
-        uint256 accessoryStartTokenId;
+        uint256 portraitStartTokenId; // portrait start token id for this request
+        uint256 accessoryStartTokenId; // accessory start token id for this request
     }
 
     /// @dev Mintable portrait info
@@ -113,8 +117,9 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         uint256 tokenId;
         BoxType boxType;
         uint8 tier;
+        uint8 illuvial;
         uint8 backgroundTier;
-        uint16 backgroundIdx;
+        uint8 backgroundIdx;
         ExpressionType expression;
         FinishType finish;
     }
@@ -415,8 +420,10 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         uint8 tier = _getTier(portraitMintInfo[mintParam.boxType].tierChances, chance);
         portrait.tier = tier;
 
+        (_rand, portrait.illuvial) = _getQuotientAndRemainder8(_rand, illuvialCounts[tier]);
+
         (_rand, portrait.backgroundTier) = _getBackgroundTier(tier, mintParam.boxType, _rand);
-        (_rand, portrait.backgroundIdx) = _getQuotientAndRemainder16(_rand, backgroundCounts[portrait.backgroundTier]);
+        (_rand, portrait.backgroundIdx) = _getQuotientAndRemainder8(_rand, backgroundCounts[portrait.backgroundTier]);
 
         (_rand, portrait.expression) = _getExpression(_rand);
         (, portrait.finish) = _getFinish(_rand, mintParam.boxType);
@@ -587,6 +594,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
 
         backgroundCounts = [10, 10, 10, 10, 5, 5];
         expressionProbability = [50, 80, 100];
+        illuvialCounts = [3, 6, 5, 4, 4, 3];
     }
 
     /**
@@ -737,6 +745,11 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     /// @dev calculate quotient and remainder
     function _getQuotientAndRemainder16(uint256 a, uint16 b) internal pure returns (uint256, uint16) {
         return (a / b, uint16(a % b));
+    }
+
+    /// @dev calculate quotient and remainder
+    function _getQuotientAndRemainder8(uint256 a, uint8 b) internal pure returns (uint256, uint8) {
+        return (a / b, uint8(a % b));
     }
 
     /// @inheritdoc UUPSUpgradeable
