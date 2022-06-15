@@ -85,6 +85,8 @@ export const random_int = (from: number, to: number): number => {
   return Math.floor(from + Math.random() * (to - from));
 };
 
+export const random_bytes = (size: number): string => "0x" + randomBytes(size).toString("hex");
+
 // generates random BN in a [0, 2^256) range: r ∈ [0, 2^256)
 export const random_bn256 = (): BigNumber => {
   // use crypto.randomBytes to generate 256 bits of randomness and wrap it into BN
@@ -127,10 +129,14 @@ export const makeAccessoryMintingBlob = (
 };
 
 export const generatePurchaseParams = (
+  portraitMintMinLength: number = 1,
   portraitMintMaxLength: number = 3,
+  accessorySemiRandomMintMinLength: number = 1,
   accessorySemiRandomMintMaxLength: number = 3,
+  accessoryFullRandomMintMinLength: number = 1,
   accessoryFullRandomMintMaxLength: number = 3,
   maxAmountPerMint: number = 2,
+  onlyVirtual: boolean = false,
 ): {
   portraitMintParams: PortraitMintParams[];
   accessorySemiRandomMintParams: AccessorySemiRandomMintParams[];
@@ -144,21 +150,24 @@ export const generatePurchaseParams = (
   let etherPrice = BigNumber.from(0);
 
   const portraitMintParams = [];
-  const portraitMintLength = random_int(1, portraitMintMaxLength + 1);
+  const portraitMintLength = random_int(portraitMintMinLength, portraitMintMaxLength + 1);
   for (let i = 0; i < portraitMintLength; i++) {
     portraitMintParams.push({
-      boxType: random_element(boxTypeNumbers) as BoxType,
+      boxType: onlyVirtual ? BoxType.Virtual : (random_element(boxTypeNumbers) as BoxType),
       amount: getRandomAmount(),
     });
     etherPrice = etherPrice.add(portraitMintParams[i].amount.mul(portraitPrices[portraitMintParams[i].boxType]));
   }
 
   const accessorySemiRandomMintParams = [];
-  const accessorySemiRandomMintLength = random_int(1, accessorySemiRandomMintMaxLength + 1);
+  const accessorySemiRandomMintLength = random_int(
+    accessorySemiRandomMintMinLength,
+    accessorySemiRandomMintMaxLength + 1,
+  );
   for (let i = 0; i < accessorySemiRandomMintLength; i++) {
     accessorySemiRandomMintParams.push({
       accessoryType: random_element(accessoryTypeNumbers) as AccessoryType,
-      boxType: random_element(boxTypeNumbers) as BoxType,
+      boxType: onlyVirtual ? BoxType.Virtual : (random_element(boxTypeNumbers) as BoxType),
       amount: getRandomAmount(),
     });
     etherPrice = etherPrice.add(
@@ -169,10 +178,13 @@ export const generatePurchaseParams = (
   }
 
   const accessoryFullRandomMintParams = [];
-  const accessoryFullRandomMintLength = random_int(1, accessoryFullRandomMintMaxLength + 1);
+  const accessoryFullRandomMintLength = random_int(
+    accessoryFullRandomMintMinLength,
+    accessoryFullRandomMintMaxLength + 1,
+  );
   for (let i = 0; i < accessoryFullRandomMintLength; i++) {
     accessoryFullRandomMintParams.push({
-      boxType: random_element(boxTypeNumbers) as BoxType,
+      boxType: onlyVirtual ? BoxType.Virtual : (random_element(boxTypeNumbers) as BoxType),
       amount: getRandomAmount(),
     });
     etherPrice = etherPrice.add(

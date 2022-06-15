@@ -76,5 +76,5 @@ interface IlluvitarsPriceOracle {
      * @param ethOut amount of ETH sale contract is expecting to get
      * @return ilvIn amount of sILV sale contract should accept instead
      */
-    function ethToIlv(uint256 ethOut) external returns (uint256 ilvIn);
+    function ethToIlv(uint256 ethOut) external view returns (uint256 ilvIn);
 }
