@@ -68,6 +68,7 @@ abstract contract BaseIlluvitar is ERC721EnumerableUpgradeable, UUPSUpgradeable,
     function markForSale(uint256 tokenId, bool _sale) external {
         require(ownerOf(tokenId) == msg.sender, "Not token owner");
         openForSale[tokenId] = _sale;
+        emit OpenForSale(tokenId, _sale);
     }
 
     /// Return baseURI

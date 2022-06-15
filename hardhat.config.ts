@@ -145,6 +145,9 @@ const config: HardhatUserConfig = {
       "@chainlink/contracts/src/v0.4/LinkToken.sol",
     ],
   },
+  mocha: {
+    timeout: 100000000,
+  },
 };
 
 export default config;

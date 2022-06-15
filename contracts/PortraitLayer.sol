@@ -119,6 +119,7 @@ contract PortraitLayer is BaseIlluvitar {
         (eyeTokenId, p) = _atoi(blueprint, p);
         (headTokenId, p) = _atoi(blueprint, p);
         (propsTokenId, p) = _atoi(blueprint, p);
+        require(p == len, "Wrong blueprint format");
     }
 
     /**
@@ -142,12 +143,6 @@ contract PortraitLayer is BaseIlluvitar {
                 // we've found decimal character, skipping stops
                 break;
             }
-        }
-
-        // if there weren't any digits found
-        if (p == a.length) {
-            // just return a zero result
-            return (0, offset);
         }
 
         // iterate over the rest of the string (bytes buffer)

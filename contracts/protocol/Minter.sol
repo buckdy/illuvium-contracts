@@ -229,7 +229,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         uint256 length = portraitMintParams.length;
         if (length > 0) {
             require(
-                block.timestamp >= portraitSaleWindow.start && block.timestamp >= portraitSaleWindow.end,
+                block.timestamp >= portraitSaleWindow.start && block.timestamp <= portraitSaleWindow.end,
                 "Sale not started or ended"
             );
         }
@@ -608,11 +608,6 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     /// @dev calculate quotient and remainder
     function _getQuotientAndRemainder64(uint256 a, uint64 b) internal pure returns (uint256, uint64) {
         return (a / b, uint64(a % b));
-    }
-
-    /// @dev calculate quotient and remainder
-    function _getQuotientAndRemainder8(uint256 a, uint8 b) internal pure returns (uint256, uint8) {
-        return (a / b, uint8(a % b));
     }
 
     /// @dev calculate quotient and remainder

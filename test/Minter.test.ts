@@ -1,23 +1,32 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Contract, constants, utils, BigNumberish } from "ethers";
-import { Minter } from "../typechain";
-import { generateRandomAddress } from "./utils";
+import { constants, utils, BigNumberish } from "ethers";
+import { Minter, VRFCoordinatorMock, LinkToken } from "../typechain";
+import { generateRandomAddress, generatePurchaseParams, random_int, random_bn256 } from "./utils";
 
 describe("Minter", () => {
   let owner: SignerWithAddress;
   let alice: SignerWithAddress;
-  let vrfCoordinator: Contract;
-  let linkToken: Contract;
+  let randomnessFulfiller: SignerWithAddress;
+  let vrfCoordinator: VRFCoordinatorMock;
+  let linkToken: LinkToken;
   let minterContract: Minter;
   let oracleRegistry: string;
 
   const keyHash = "0x6c3699283bda56ad74f6b855546325b68d482e983852a7a82979cc4807b641f4";
   const fee = utils.parseEther("0.0001");
 
+  const portraitSaleDuration = 259200; // 3 days
+
   const treasury = generateRandomAddress();
   const sILV = generateRandomAddress();
+
+  async function getBlockTimestamp() {
+    const blockNumBefore = await ethers.provider.getBlockNumber();
+    const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+    return blockBefore.timestamp;
+  }
 
   async function deployMinterProxy(
     vrfCoordinator: string,
@@ -47,7 +56,7 @@ describe("Minter", () => {
   }
 
   beforeEach(async () => {
-    [owner, alice] = await ethers.getSigners();
+    [owner, alice, randomnessFulfiller] = await ethers.getSigners();
     const LinkTokenFactory = await ethers.getContractFactory("LinkToken");
     const VRFCoordinatorMockFactory = await ethers.getContractFactory("VRFCoordinatorMock");
     const ProxyFactory = await ethers.getContractFactory("ERC1967Proxy");
@@ -140,6 +149,47 @@ describe("Minter", () => {
       const newTreasury = "0xA4e47B38415201d4c8aB42711892A31C7B06bdE9";
       await minterContract.connect(owner).setTreasury(newTreasury);
       expect(await minterContract.treasury()).to.equal(newTreasury);
+    });
+  });
+
+  describe("purchasing illuvitars", () => {
+    beforeEach(async () => {
+      const blockTimestamp = await getBlockTimestamp();
+      await minterContract.setPortraitSaleWindow({
+        start: blockTimestamp,
+        end: blockTimestamp + portraitSaleDuration,
+      });
+    });
+    it("purchase an item, fulfill randomness and get minting results", async () => {
+      const { portraitMintParams, accessorySemiRandomMintParams, accessoryFullRandomMintParams, etherPrice } =
+        generatePurchaseParams();
+
+      const txResponse = await minterContract
+        .connect(alice)
+        .purchase(portraitMintParams, accessorySemiRandomMintParams, accessoryFullRandomMintParams, false, {
+          value: etherPrice,
+        });
+
+      const events = (await txResponse.wait()).events ?? [];
+      expect(events?.length).to.be.greaterThan(0);
+
+      const requester = events[events.length - 1].args?.requester;
+      const requestId = events[events.length - 1].args?.requestId;
+
+      expect(requester).to.be.equal(await alice.getAddress());
+
+      let randomNumber = random_bn256();
+      randomNumber = randomNumber.eq("0") ? randomNumber.add("1") : randomNumber;
+      await expect(
+        vrfCoordinator
+          .connect(randomnessFulfiller)
+          .callBackWithRandomness(requestId, randomNumber, minterContract.address),
+      )
+        .to.emit(minterContract, "RequestFulfilled")
+        .withArgs(requestId, randomNumber.toString());
+
+      // TODO: Need to verify this result somehow (compare with JS implementation?)
+      await minterContract.getMintResult(requestId, { gasLimit: constants.MaxUint256 });
     });
   });
 });
