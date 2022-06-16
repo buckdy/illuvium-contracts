@@ -113,24 +113,22 @@ const config: HardhatUserConfig = {
       3: "0x4527BE8f31E2ebFbEF4fCADDb5a17447B27d2aef",
     },
     linkToken: {
-      3: "0xb953b44b4e776313B1236D92C09D9ce39135EdbE",
-    },
-    weth: {
-      3: "0xc778417e063141139fce010982780140aa0cd5ab",
+      1: "0x514910771af9ca656af840dff83e8264ecf986ca",
+      3: "0x1f24883025cA1a5cF80a1D183Da8666d90667Ef9",
     },
     vrfCoordinator: {
-      3: "0xf8046Eb28d62D12AB1b55e8e6A9742C1b1F51164",
+      1: "0x271682DEB8C4E0901D1a1550aD2e64D568E69909",
+      3: "0x9eD66d0F68802d967933f800D602b8B033bf6fCa",
     },
     // Escrowed Illuvium 2 ERC20 (sILV2)
     sIlvAddress: {
-      mainnet: "0x7E77dCb127F99ECe88230a64Db8d595F31F1b068",
-      rinkeby: "0xbfF2129e06a7e76323e7ceA754eBD045Bc3E82A5",
-      ropsten: "0xCe34A06141B2131aD6C6E293275d22123bcf1865",
+      1: "0x7E77dCb127F99ECe88230a64Db8d595F31F1b068",
+      3: "0x774e30b5bd47125000dEb424547BfFEB13c1B706",
     },
     // Chainlink Price Feed Aggregator
     chainlinkAggregator: {
-      mainnet: "0xf600984CCa37cd562E74E3EE514289e3613ce8E4",
-      rinkeby: "0x48731cF7e84dc94C5f84577882c14Be11a5B7456",
+      1: "0xf600984CCa37cd562E74E3EE514289e3613ce8E4",
+      3: "0x916FaC543b615FD89155927836440B25130B5ECA",
     },
   },
   etherscan: {
