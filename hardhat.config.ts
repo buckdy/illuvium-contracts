@@ -114,21 +114,21 @@ const config: HardhatUserConfig = {
     },
     linkToken: {
       1: "0x514910771af9ca656af840dff83e8264ecf986ca",
-      3: "0x1f24883025cA1a5cF80a1D183Da8666d90667Ef9",
+      // 3: "0x1f24883025cA1a5cF80a1D183Da8666d90667Ef9",
     },
     vrfCoordinator: {
       1: "0x271682DEB8C4E0901D1a1550aD2e64D568E69909",
-      3: "0x9eD66d0F68802d967933f800D602b8B033bf6fCa",
+      // 3: "0x9eD66d0F68802d967933f800D602b8B033bf6fCa",
     },
     // Escrowed Illuvium 2 ERC20 (sILV2)
     sIlvAddress: {
       1: "0x7E77dCb127F99ECe88230a64Db8d595F31F1b068",
-      3: "0x774e30b5bd47125000dEb424547BfFEB13c1B706",
+      // 3: "0x774e30b5bd47125000dEb424547BfFEB13c1B706",
     },
     // Chainlink Price Feed Aggregator
     chainlinkAggregator: {
       1: "0xf600984CCa37cd562E74E3EE514289e3613ce8E4",
-      3: "0x916FaC543b615FD89155927836440B25130B5ECA",
+      // 3: "0x916FaC543b615FD89155927836440B25130B5ECA",
     },
   },
   etherscan: {
