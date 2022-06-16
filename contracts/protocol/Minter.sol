@@ -428,7 +428,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         (_rand, portrait.expression) = _getExpression(_rand);
         (, portrait.finish) = _getFinish(_rand, mintParam.boxType);
 
-        nextTokenId += PORTRAIT_MASK;
+        nextTokenId = tokenId + PORTRAIT_MASK;
         nextRand = uint256(keccak256(abi.encode(rand, rand)));
     }
 
@@ -464,7 +464,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         accessory.tier = tier;
         (, accessory.stage) = _getAccessoryStage(_rand);
 
-        nextTokenId += 1;
+        nextTokenId = tokenId + 1;
         nextRand = uint256(keccak256(abi.encode(rand, rand)));
     }
 
@@ -500,7 +500,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         accessory.tier = tier;
         (, accessory.stage) = _getAccessoryStage(_rand);
 
-        nextTokenId += 1;
+        nextTokenId = tokenId + 1;
         nextRand = uint256(keccak256(abi.encode(rand, rand)));
     }
 

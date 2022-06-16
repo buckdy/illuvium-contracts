@@ -12,7 +12,7 @@ const generalConfig = {
 // Relative configuration object
 // Configuration for new IMX project -- 2_create_project.js
 const projectConfig = {
-  project_name: "test-illuvitar", // Name of the project
+  project_name: "Illuvitar Accessory", // Name of the project
   company_name: "illuvium.io", // Name of the company in charge of the project
   contact_email: "dmitry.yakovlevich@illuvium.io", // Contact email of the project "owner"
 };
@@ -20,9 +20,9 @@ const projectConfig = {
 // Relative configuration object
 // Configuration for new IMX collection -- 3_create_collection.js
 const collectionConfig = {
-  project_id: "51891", // Project ID where the collection will be created
-  name: "BodyAccessoryIlluvitar", // Name of the collection
-  contract_address: "0x6eb8188d8D8157C25c4D6F9370b91f0613ea9368", // Address of the ERC721 contract on L1
+  project_id: "57638", // Project ID where the collection will be created
+  name: "Illuvitar Accessory", // Name of the collection
+  contract_address: "0x4D6B51567eb2FD435A234d1cc072b8F74Af960C6", // Address of the ERC721 contract on L1
   icon_url: "", // URL or base64 encoded SVG image for the collection icon -- optional
   metadata_api_url: "", // The metadata API base URL (used to feed each token with unique metadata) -- optional
   collection_image_url: "", // URL or base64 encoded SVG image for the collection banner/tile -- optional
@@ -31,7 +31,7 @@ const collectionConfig = {
 // Relative configuration object
 // Metadata schema for the IMX collection -- 4_add_metadata_schema.js
 const collectionMetadataSchema = {
-  contract_address: "0x6eb8188d8D8157C25c4D6F9370b91f0613ea9368",
+  contract_address: "0x4D6B51567eb2FD435A234d1cc072b8F74Af960C6",
   metadata: collectionMetadata,
 };
 
