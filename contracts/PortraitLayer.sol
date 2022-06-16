@@ -60,27 +60,25 @@ contract PortraitLayer is BaseIlluvitar {
         bytes memory blueprint
     ) internal override {
         _safeMint(to, tokenId);
-        if (!metadataInitialized[tokenId]) {
-            (
-                BoxType boxType,
-                uint8 tier,
-                uint256 skinTokenId,
-                uint256 bodyTokenId,
-                uint256 eyeTokenId,
-                uint256 headTokenId,
-                uint256 propsTokenId
-            ) = _parseBlueprint(blueprint);
-            metadata[tokenId] = Metadata({
-                boxType: boxType,
-                tier: tier,
-                skinId: skinTokenId,
-                bodyId: bodyTokenId,
-                eyeId: eyeTokenId,
-                headId: headTokenId,
-                propsId: propsTokenId
-            });
-            metadataInitialized[tokenId] = true;
-        }
+        (
+            BoxType boxType,
+            uint8 tier,
+            uint256 skinTokenId,
+            uint256 bodyTokenId,
+            uint256 eyeTokenId,
+            uint256 headTokenId,
+            uint256 propsTokenId
+        ) = _parseBlueprint(blueprint);
+        metadata[tokenId] = Metadata({
+            boxType: boxType,
+            tier: tier,
+            skinId: skinTokenId,
+            bodyId: bodyTokenId,
+            eyeId: eyeTokenId,
+            headId: headTokenId,
+            propsId: propsTokenId
+        });
+        metadataInitialized[tokenId] = true;
     }
 
     /// @dev Parse blueprint
@@ -97,29 +95,41 @@ contract PortraitLayer is BaseIlluvitar {
             uint256 propsTokenId
         )
     {
-        uint8 j = 0;
-
         uint256 len = blueprint.length;
         uint8 p;
-        for (; p < len; p += 1) {
-            if (_isDecimal(blueprint[p])) {
-                if (j == 0) {
-                    boxType = BoxType(uint8(blueprint[p]) - 0x30);
-                } else if (j == 1) {
-                    tier = uint8(blueprint[p]) - 0x30;
-                    p += 1;
-                    break;
-                }
-                j += 1;
-            }
-        }
 
+        p = _skipNonDecimal(blueprint, p);
+        require(_isDecimal(blueprint[p + 1]), "Wrong blueprint format");
+        boxType = BoxType(uint8(blueprint[p++]) - 0x30);
+        tier = uint8(blueprint[p++]) - 0x30;
         (skinTokenId, p) = _atoi(blueprint, p);
         (bodyTokenId, p) = _atoi(blueprint, p);
         (eyeTokenId, p) = _atoi(blueprint, p);
         (headTokenId, p) = _atoi(blueprint, p);
         (propsTokenId, p) = _atoi(blueprint, p);
+        p = _skipNonDecimal(blueprint, p);
         require(p == len, "Wrong blueprint format");
+    }
+
+    /**
+     * @dev Skip non-decimal characters and return the index of the first decimal
+     *
+     * @dev If no decimal character is present, it will return the length of `a`
+     *
+     * @param a numeric string to convert
+     * @param offset an index to start parsing from, set to zero to parse from the beginning
+     * @return p an index where the conversion stopped
+     */
+    function _skipNonDecimal(bytes memory a, uint8 offset) internal pure returns (uint8 p) {
+        // skip wrong characters in the beginning of the string if any
+        for (p = offset; p < a.length; p++) {
+            // check if digit is valid and meets the base 10
+            if (_isDecimal(a[p])) {
+                // we've found decimal character, skipping stops
+                return p;
+            }
+        }
+        return p;
     }
 
     /**
@@ -137,13 +147,7 @@ contract PortraitLayer is BaseIlluvitar {
      */
     function _atoi(bytes memory a, uint8 offset) internal pure returns (uint256 i, uint8 p) {
         // skip wrong characters in the beginning of the string if any
-        for (p = offset; p < a.length; p++) {
-            // check if digit is valid and meets the base 10
-            if (_isDecimal(a[p])) {
-                // we've found decimal character, skipping stops
-                break;
-            }
-        }
+        p = _skipNonDecimal(a, offset);
 
         // iterate over the rest of the string (bytes buffer)
         for (; p < a.length; p++) {

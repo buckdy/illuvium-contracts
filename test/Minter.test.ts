@@ -18,9 +18,6 @@ import {
   random_bytes,
   random_element,
 } from "./utils";
-import { deployProxy } from "../scripts/include/deployment_routines";
-import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
-import { assert } from "console";
 
 describe("Minter", () => {
   let owner: SignerWithAddress;
@@ -99,7 +96,7 @@ describe("Minter", () => {
       oracleRegistry,
     );
 
-    await linkToken.transfer(minterContract.address, 10 ** 15);
+    await linkToken.transfer(minterContract.address, BigNumber.from(10).pow(27));
   });
 
   describe("initialize", async () => {
@@ -168,6 +165,7 @@ describe("Minter", () => {
   describe("wrong randomness fulfillment", () => {
     let minterWithMockedVRFCoordinator: Minter;
     beforeEach(async () => {
+      const linkToken = (await deploy("LinkToken", [])) as LinkToken;
       minterWithMockedVRFCoordinator = await deployMinterProxy(
         await owner.getAddress(), // `owner` is the `VRFCoordinator`
         linkToken.address,
@@ -184,7 +182,7 @@ describe("Minter", () => {
         end: blockTimestamp + portraitSaleDuration,
       });
 
-      await linkToken.transfer(minterWithMockedVRFCoordinator.address, 10 ** 15);
+      await linkToken.transfer(minterWithMockedVRFCoordinator.address, BigNumber.from(10).pow(27));
     });
 
     it("revert if randomness is fulfilled for a non-purchased mint request", async () => {
@@ -234,6 +232,7 @@ describe("Minter", () => {
         generatePurchaseParams();
 
       let sIlvPrice;
+      let treasuryPreviousBalance = BigNumber.from(0);
       if (useSIlv) {
         if (!sIlvMock) throw "sIlvMock contract needs to be provided";
         const illuvitarsPriceOracle = IlluvitarsPriceOracle__factory.connect(
@@ -247,6 +246,9 @@ describe("Minter", () => {
           throw "Full access mint function is required on sILVMock contract";
         }
         await sIlvMock.connect(purchaser).approve(minterContract.address, sIlvPrice);
+        treasuryPreviousBalance = treasuryPreviousBalance.add(
+          await sIlvMock.balanceOf(await minterContract.treasury()),
+        );
       }
 
       const txResponse = await minterContract
@@ -256,7 +258,10 @@ describe("Minter", () => {
         });
 
       if (useSIlv) {
-        expect(await sIlvMock?.balanceOf(await minterContract.treasury())).to.be.equal(sIlvPrice);
+        const treasuryBalanceDelta = (await sIlvMock?.balanceOf(await minterContract.treasury()))?.sub(
+          treasuryPreviousBalance,
+        );
+        expect(treasuryBalanceDelta).to.be.equal(sIlvPrice);
         expect(await sIlvMock?.balanceOf(await purchaser.getAddress())).to.be.equal("0");
       }
 
@@ -480,12 +485,16 @@ describe("Minter", () => {
 
     // Buy with ETH
     it("purchase an item, fulfill randomness and get minting results (ETH)", async () => {
-      await testPurchase(alice, randomnessFulfiller, false);
+      for (let i = 0; i < 100; i++) {
+        await testPurchase(alice, randomnessFulfiller, false);
+      }
     });
 
     // Buy with sILV2
     it("purchase an item, fulfill randomness and get minting results (sILV2)", async () => {
-      await testPurchase(alice, randomnessFulfiller, true, sIlvMock);
+      for (let i = 0; i < 100; i++) {
+        await testPurchase(alice, randomnessFulfiller, true, sIlvMock);
+      }
     });
   });
 

@@ -5,7 +5,12 @@ const { BN, balance, constants, expectEvent, expectRevert } = require("@openzepp
 const { ZERO_ADDRESS, ZERO_BYTES32, MAX_UINT256 } = constants;
 
 // ACL token features and roles
-const { not, ROLE_PRICE_ORACLE_MANAGER } = require("../../scripts/include/features_roles");
+const {
+  not,
+  ROLE_PRICE_ORACLE_MANAGER,
+  ROLE_ACCESS_MANAGER,
+  ROLE_UPGRADE_MANAGER,
+} = require("../../scripts/include/features_roles");
 
 // deployment routines in use
 const { illuvitars_price_oracle_deploy } = require("./include/deployment_routines");
@@ -47,6 +52,21 @@ contract("IlluvitarsPriceOracle: AccessControl (ACL) tests", function (accounts)
         });
         it("sender can't set the oldAnswerThreshold: setOldAnswerThreshold()", async function () {
           await expectRevert(setOldAnswerThreshold(), "access denied");
+        });
+      });
+      describe("when sender doesn't have ROLE_ACCESS_MANAGER permission", async function () {
+        it("sender can't update any role", async function () {
+          await expectRevert(oracle.updateRole(a0, not(ROLE_ACCESS_MANAGER), { from }), "access denied");
+        });
+      });
+      describe("when sender doesn't have ROLE_UPGRADE_MANAGER permission", async function () {
+        beforeEach(async function () {
+          await oracle.updateRole(from, not(ROLE_UPGRADE_MANAGER), { from: a0 });
+        });
+        it("sender can't update implementation", async function () {
+          const IlluvitarsPriceOracleV1 = artifacts.require("./IlluvitarsPriceOracleV1Mock");
+          const oracle_impl = await IlluvitarsPriceOracleV1.new({ from });
+          await expectRevert(oracle.upgradeTo(oracle_impl.address, { from }), "access denied");
         });
       });
     }

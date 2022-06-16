@@ -50,11 +50,9 @@ contract AccessoryLayer is BaseIlluvitar {
         bytes memory blueprint
     ) internal override {
         _safeMint(to, tokenId);
-        if (!metadataInitialized[tokenId]) {
-            (BoxType boxType, uint8 tier, AccessoryType accessoryType) = _parseBlueprint(blueprint);
-            metadata[tokenId] = Metadata({ boxType: boxType, tier: tier, accessoryType: accessoryType });
-            metadataInitialized[tokenId] = true;
-        }
+        (BoxType boxType, uint8 tier, AccessoryType accessoryType) = _parseBlueprint(blueprint);
+        metadata[tokenId] = Metadata({ boxType: boxType, tier: tier, accessoryType: accessoryType });
+        metadataInitialized[tokenId] = true;
     }
 
     /// @dev Parse blueprint
