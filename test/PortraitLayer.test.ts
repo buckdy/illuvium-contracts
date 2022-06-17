@@ -1,7 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
-import { utils } from "ethers";
 import { PortraitLayer } from "../typechain";
 import { BoxType, makePortraitMintingBlob } from "./utils";
 
@@ -33,6 +32,22 @@ describe("PortraitLayer", () => {
       expect(metadata.eyeId).to.equal(42);
       expect(metadata.headId).to.equal(53);
       expect(metadata.propsId).to.equal(68);
+    });
+
+    it("revert if tier field is not a decimal number", async () => {
+      const data = ethers.utils.solidityPack(["string"], ["{2}:{5a,20,31,42,53,68}"]);
+
+      await expect(portraitLayer.connect(minter).mintFor(alice.address, 1, data)).to.be.revertedWith(
+        "Wrong blueprint format",
+      );
+    });
+
+    it("revert if there's an extra decimal after skipping all trailling non-decimal chars", async () => {
+      const data = ethers.utils.solidityPack(["string"], ["{3}:{53,20,31,42,53,68,7}"]);
+
+      await expect(portraitLayer.connect(minter).mintFor(alice.address, 1, data)).to.be.revertedWith(
+        "Wrong blueprint format",
+      );
     });
   });
 });

@@ -190,6 +190,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
 
         _initializePortraitMintInfo();
         _initializeAccessoryMintInfo();
+        _initializeBackgroundTierChances();
     }
 
     /**
@@ -374,18 +375,16 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         uint256 tokenId = startTokenId;
         nextRand = seed;
 
-        if (portraitAmount > 0) {
-            portraits = new PortraitInfo[](portraitAmount);
-            uint256 idx;
+        portraits = new PortraitInfo[](portraitAmount);
+        uint256 idx;
 
-            for (uint256 i = 0; i < length; i += 1) {
-                PortraitMintParams memory mintParam = portraitMintParams[i];
-                uint256 amount = mintParam.amount;
+        for (uint256 i = 0; i < length; i += 1) {
+            PortraitMintParams memory mintParam = portraitMintParams[i];
+            uint256 amount = mintParam.amount;
 
-                for (uint256 j = 0; j < amount; j += 1) {
-                    (portraits[idx], nextRand, tokenId) = _getPortraitInfo(nextRand, mintParam, tokenId);
-                    idx += 1;
-                }
+            for (uint256 j = 0; j < amount; j += 1) {
+                (portraits[idx], nextRand, tokenId) = _getPortraitInfo(nextRand, mintParam, tokenId);
+                idx += 1;
             }
         }
     }
@@ -532,26 +531,24 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
 
         uint256 idx;
         uint256 nextRand = seed;
-        if (semiRandomAmount > 0 || fullRandomAmount > 0) {
-            accessories = new AccessoryInfo[](semiRandomAmount + fullRandomAmount);
+        accessories = new AccessoryInfo[](semiRandomAmount + fullRandomAmount);
 
-            for (uint256 i = 0; i < length; i += 1) {
-                AccessorySemiRandomMintParams memory mintParam = semiRandomMintParams[i];
-                uint256 amount = mintParam.amount;
-                for (uint256 j = 0; j < amount; j += 1) {
-                    (accessories[idx], nextRand, tokenId) = _getSemiAcccessoryInfo(nextRand, mintParam, tokenId);
-                    idx += 1;
-                }
+        for (uint256 i = 0; i < length; i += 1) {
+            AccessorySemiRandomMintParams memory mintParam = semiRandomMintParams[i];
+            uint256 amount = mintParam.amount;
+            for (uint256 j = 0; j < amount; j += 1) {
+                (accessories[idx], nextRand, tokenId) = _getSemiAcccessoryInfo(nextRand, mintParam, tokenId);
+                idx += 1;
             }
+        }
 
-            length = fullRandomMintParams.length;
-            for (uint256 i = 0; i < length; i += 1) {
-                AccessoryFullRandomMintParams memory mintParam = fullRandomMintParams[i];
-                uint256 amount = mintParam.amount;
-                for (uint256 j = 0; j < amount; j += 1) {
-                    (accessories[idx], nextRand, tokenId) = _getFullAcccessoryInfo(nextRand, mintParam, tokenId);
-                    idx += 1;
-                }
+        length = fullRandomMintParams.length;
+        for (uint256 i = 0; i < length; i += 1) {
+            AccessoryFullRandomMintParams memory mintParam = fullRandomMintParams[i];
+            uint256 amount = mintParam.amount;
+            for (uint256 j = 0; j < amount; j += 1) {
+                (accessories[idx], nextRand, tokenId) = _getFullAcccessoryInfo(nextRand, mintParam, tokenId);
+                idx += 1;
             }
         }
     }
