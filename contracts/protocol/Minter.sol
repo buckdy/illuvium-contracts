@@ -696,12 +696,13 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
 
         uint16[MAX_TIER] memory chances = backgroundTierChances[tier][boxType];
 
+        backgroundTier = 1;
         for (uint8 k = 0; k < MAX_TIER; k += 1) {
             if (chances[k] > chance) {
                 backgroundTier = k + 1;
+                break;
             }
         }
-        backgroundTier = 1;
     }
 
     function _getExpression(uint256 rand) internal view returns (uint256 newRand, ExpressionType expression) {

@@ -34,6 +34,8 @@ class AccessoryPrices implements IAccessoryPrices {
   semiRandomPrice;
 
   constructor(_randomPrice: BigNumberish, _semiRandomPrice: BigNumberish) {
+    if (!(_randomPrice instanceof BigNumber)) _randomPrice = BigNumber.from(_randomPrice);
+    if (!(_semiRandomPrice instanceof BigNumber)) _semiRandomPrice = BigNumber.from(_semiRandomPrice);
     this.randomPrice = _randomPrice;
     this.semiRandomPrice = _semiRandomPrice;
   }
@@ -57,7 +59,7 @@ export interface AccessoryFullRandomMintParams {
 
 export const CENTIETHER: BigNumberish = BigNumber.from(10).pow(16);
 
-export const centiethers = (cents: number): BigNumberish => {
+export const centiethers = (cents: number): BigNumber => {
   return BigNumber.from(cents).mul(CENTIETHER);
 };
 
@@ -71,7 +73,7 @@ export const accessoryPrices = {
 };
 
 export const portraitPrices = {
-  [BoxType.Virtual]: 0,
+  [BoxType.Virtual]: BigNumber.from(0),
   [BoxType.Bronze]: centiethers(5),
   [BoxType.Silver]: centiethers(10),
   [BoxType.Gold]: centiethers(25),
@@ -125,7 +127,7 @@ export const makeAccessoryMintingBlob = (
   tier: number,
   acccessoryType: AccessoryType,
 ): string => {
-  return utils.formatBytes32String(`{${tokenId.toString()}}:{${boxType}${tier}${acccessoryType}}`);
+  return utils.solidityPack(["string"], [`{${tokenId.toString()}}:{${boxType}${tier}${acccessoryType}}`]);
 };
 
 export const generatePurchaseParams = (
