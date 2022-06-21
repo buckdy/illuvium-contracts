@@ -4,60 +4,34 @@ import type { BigNumberish } from "ethers";
 // crypto is used to get enough randomness for the random BN generation
 import { randomBytes } from "crypto";
 
+// get types
+import {
+  AccessoryType,
+  BoxType,
+  IAccessoryPrices,
+  PortraitMintParams,
+  AccessorySemiRandomMintParams,
+  AccessoryFullRandomMintParams,
+} from "./types";
+
 // we use assert to fail fast in case of any errors
 import assert from "assert";
 
-export enum AccessoryType {
-  Skin = 0,
-  Body = 1,
-  EyeWear = 2,
-  HeadWear = 3,
-  Props = 4,
-}
-
-export enum BoxType {
-  Virtual = 0,
-  Bronze = 1,
-  Silver = 2,
-  Gold = 3,
-  Platinum = 4,
-  Diamond = 5,
-}
-
-export interface IAccessoryPrices {
-  randomPrice: BigNumberish;
-  semiRandomPrice: BigNumberish;
-}
-
-class AccessoryPrices implements IAccessoryPrices {
+export class AccessoryPrices implements IAccessoryPrices {
   randomPrice;
   semiRandomPrice;
 
   constructor(_randomPrice: BigNumberish, _semiRandomPrice: BigNumberish) {
+    if (!(_randomPrice instanceof BigNumber)) _randomPrice = BigNumber.from(_randomPrice);
+    if (!(_semiRandomPrice instanceof BigNumber)) _semiRandomPrice = BigNumber.from(_semiRandomPrice);
     this.randomPrice = _randomPrice;
     this.semiRandomPrice = _semiRandomPrice;
   }
 }
 
-export interface PortraitMintParams {
-  boxType: BoxType; // box type
-  amount: BigNumberish; // portrait amount to mint
-}
-
-export interface AccessorySemiRandomMintParams {
-  accessoryType: AccessoryType; // accessory type
-  boxType: BoxType; // box type
-  amount: BigNumberish; // accessory amount to mint
-}
-
-export interface AccessoryFullRandomMintParams {
-  boxType: BoxType; // box type
-  amount: BigNumberish; // portrait amount to mint
-}
-
 export const CENTIETHER: BigNumberish = BigNumber.from(10).pow(16);
 
-export const centiethers = (cents: number): BigNumberish => {
+export const centiethers = (cents: number): BigNumber => {
   return BigNumber.from(cents).mul(CENTIETHER);
 };
 
@@ -71,7 +45,7 @@ export const accessoryPrices = {
 };
 
 export const portraitPrices = {
-  [BoxType.Virtual]: 0,
+  [BoxType.Virtual]: BigNumber.from(0),
   [BoxType.Bronze]: centiethers(5),
   [BoxType.Silver]: centiethers(10),
   [BoxType.Gold]: centiethers(25),
@@ -125,7 +99,7 @@ export const makeAccessoryMintingBlob = (
   tier: number,
   acccessoryType: AccessoryType,
 ): string => {
-  return utils.formatBytes32String(`{${tokenId.toString()}}:{${boxType}${tier}${acccessoryType}}`);
+  return utils.solidityPack(["string"], [`{${tokenId.toString()}}:{${boxType}${tier}${acccessoryType}}`]);
 };
 
 export const generatePurchaseParams = (
