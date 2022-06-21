@@ -1,9 +1,9 @@
 import { expect } from "chai";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, upgrades } from "hardhat";
-import { utils } from "ethers";
 import { AccessoryLayer } from "../typechain";
-import { AccessoryType, BoxType, makeAccessoryMintingBlob } from "./utils";
+import { makeAccessoryMintingBlob } from "./include/utils";
+import { AccessoryType, BoxType } from "./include/types";
 
 describe("AccessoryLayer", () => {
   let accessoryLayer: AccessoryLayer;

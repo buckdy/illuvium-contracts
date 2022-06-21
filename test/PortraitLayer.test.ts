@@ -2,7 +2,8 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { PortraitLayer } from "../typechain";
-import { BoxType, makePortraitMintingBlob } from "./utils";
+import { makePortraitMintingBlob } from "./include/utils";
+import { BoxType } from "./include/types";
 
 describe("PortraitLayer", () => {
   let portraitLayer: PortraitLayer;

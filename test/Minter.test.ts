@@ -13,11 +13,22 @@ import {
 import {
   generateRandomAddress,
   generatePurchaseParams,
-  random_int,
   random_bn256,
   random_bytes,
   random_element,
-} from "./utils";
+} from "./include/utils";
+
+import { getMintResultJS } from "./include/illuvitars_mint_results";
+
+import {
+  Portrait,
+  Accessory,
+  MintRequest,
+  PortraitMintParams,
+  AccessorySemiRandomMintParams,
+  AccessoryFullRandomMintParams,
+  MintResult,
+} from "./include/types";
 
 describe("Minter", () => {
   let owner: SignerWithAddress;
@@ -35,6 +46,58 @@ describe("Minter", () => {
   const portraitSaleDuration = 259200; // 3 days
 
   const treasury = generateRandomAddress();
+
+  async function getMintResultSol(minterContract: Minter, requestId: utils.BytesLike): Promise<MintResult> {
+    const mintResultSol = await minterContract.getMintResult(requestId, { gasLimit: constants.MaxUint256 });
+    const formatPortraits = (portraits: typeof mintResultSol.portraits): Portrait[] => {
+      return portraits.map(portrait => ({
+        tokenId: portrait.tokenId,
+        boxType: portrait.boxType,
+        tier: portrait.tier,
+        illuvial: portrait.illuvial,
+        backgroundTier: portrait.backgroundTier,
+        backgroundIdx: portrait.backgroundIdx,
+        expression: portrait.expression,
+        finish: portrait.finish,
+      }));
+    };
+    const formatAccessories = (accessories: typeof mintResultSol.accessories): Accessory[] => {
+      return accessories.map(accessory => ({
+        tokenId: accessory.tokenId,
+        boxType: accessory.boxType,
+        accessoryType: accessory.accessoryType,
+        tier: accessory.tier,
+        stage: accessory.stage,
+      }));
+    };
+    return {
+      requester: mintResultSol.requester,
+      seed: mintResultSol.seed,
+      portraits: formatPortraits(mintResultSol.portraits),
+      accessories: formatAccessories(mintResultSol.accessories),
+    };
+  }
+
+  async function getMintRequest(
+    minterContract: Minter,
+    requestId: utils.BytesLike,
+    portraitMintParams: PortraitMintParams[],
+    accessorySemiRandomMintParams: AccessorySemiRandomMintParams[],
+    accessoryFullRandomMintParams: AccessoryFullRandomMintParams[],
+  ): Promise<MintRequest> {
+    const mintRequestSol = await minterContract.mintRequests(requestId);
+    return {
+      requester: mintRequestSol.requester,
+      portraitAmount: mintRequestSol.portraitAmount,
+      accessoryAmount: mintRequestSol.accessoryAmount,
+      randomNumber: mintRequestSol.randomNumber,
+      portraitStartTokenId: mintRequestSol.portraitStartTokenId,
+      accessoryStartTokenId: mintRequestSol.accessoryStartTokenId,
+      portraitMintParams,
+      accessorySemiRandomMintParams,
+      accessoryFullRandomMintParams,
+    };
+  }
 
   async function getBlockTimestamp() {
     const blockNumBefore = await ethers.provider.getBlockNumber();
@@ -283,8 +346,17 @@ describe("Minter", () => {
         .to.emit(minterContract, "RequestFulfilled")
         .withArgs(requestId, randomNumber.toString());
 
-      // TODO: Need to verify this result somehow (compare with JS implementation?)
-      await minterContract.getMintResult(requestId, { gasLimit: constants.MaxUint256 });
+      const mintResultSol = await getMintResultSol(minterContract, requestId);
+      const formatedMintRequest = await getMintRequest(
+        minterContract,
+        requestId,
+        portraitMintParams,
+        accessorySemiRandomMintParams,
+        accessoryFullRandomMintParams,
+      );
+      const mintResultJS = getMintResultJS(formatedMintRequest);
+
+      expect(JSON.stringify(mintResultSol)).to.be.equal(JSON.stringify(mintResultJS));
     }
     beforeEach(async () => {
       const blockTimestamp = await getBlockTimestamp();
@@ -371,8 +443,17 @@ describe("Minter", () => {
         .to.emit(minterContract, "RequestFulfilled")
         .withArgs(requestId, randomNumber.toString());
 
-      // TODO: Need to verify this result somehow (compare with JS implementation?)
-      await minterContract.getMintResult(requestId, { gasLimit: constants.MaxUint256 });
+      const mintResultSol = await getMintResultSol(minterContract, requestId);
+      const formatedMintRequest = await getMintRequest(
+        minterContract,
+        requestId,
+        portraitMintParams,
+        accessorySemiRandomMintParams,
+        accessoryFullRandomMintParams,
+      );
+      const mintResultJS = getMintResultJS(formatedMintRequest);
+
+      expect(JSON.stringify(mintResultSol)).to.be.equal(JSON.stringify(mintResultJS));
     });
 
     it("purchase only Portrait", async () => {
@@ -400,8 +481,17 @@ describe("Minter", () => {
         .to.emit(minterContract, "RequestFulfilled")
         .withArgs(requestId, randomNumber.toString());
 
-      // TODO: Need to verify this result somehow (compare with JS implementation?)
-      await minterContract.getMintResult(requestId, { gasLimit: constants.MaxUint256 });
+      const mintResultSol = await getMintResultSol(minterContract, requestId);
+      const formatedMintRequest = await getMintRequest(
+        minterContract,
+        requestId,
+        portraitMintParams,
+        accessorySemiRandomMintParams,
+        accessoryFullRandomMintParams,
+      );
+      const mintResultJS = getMintResultJS(formatedMintRequest);
+
+      expect(JSON.stringify(mintResultSol)).to.be.equal(JSON.stringify(mintResultJS));
     });
 
     it("revert when portrait mint amount is ZERO", async () => {
@@ -459,8 +549,17 @@ describe("Minter", () => {
         .to.emit(minterContract, "RequestFulfilled")
         .withArgs(requestId, randomNumber.toString());
 
-      // TODO: Need to verify this result somehow (compare with JS implementation?)
-      await minterContract.getMintResult(requestId, { gasLimit: constants.MaxUint256 });
+      const mintResultSol = await getMintResultSol(minterContract, requestId);
+      const formatedMintRequest = await getMintRequest(
+        minterContract,
+        requestId,
+        portraitMintParams,
+        accessorySemiRandomMintParams,
+        accessoryFullRandomMintParams,
+      );
+      const mintResultJS = getMintResultJS(formatedMintRequest);
+
+      expect(JSON.stringify(mintResultSol)).to.be.equal(JSON.stringify(mintResultJS));
     });
 
     it("amount of ethers sent should be equal to etherPrice", async () => {

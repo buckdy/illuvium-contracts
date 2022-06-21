@@ -3,7 +3,8 @@ import { constants } from "ethers";
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { AccessoryLayer, UUPSUpgradeable } from "../typechain";
-import { BoxType, AccessoryType, makeAccessoryMintingBlob } from "./utils";
+import { makeAccessoryMintingBlob } from "./include/utils";
+import { BoxType, AccessoryType } from "./include/types";
 
 describe("BaseIlluvitar", () => {
   let baseIlluvitar: AccessoryLayer;

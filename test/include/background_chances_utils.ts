@@ -1,6 +1,6 @@
-import { BoxType } from "../utils";
 import fs from "fs";
 import path from "path";
+import { BoxType } from "./types";
 
 const portraitTierChancePerBoxType = {
   [BoxType.Virtual]: [100.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -44,6 +44,7 @@ export function getBackgroundTierChance(tier: number, boxType: BoxType): number[
   return getSolidityProbs(getBackgroundChances(tier, boxType));
 }
 
+/*
 function main(): void {
   let tierProbs: { [boxType: string]: number[] } = {};
   const solidityBackgroundProbs: { [tier: string]: typeof tierProbs } = {};
@@ -60,3 +61,4 @@ function main(): void {
 }
 
 main();
+*/

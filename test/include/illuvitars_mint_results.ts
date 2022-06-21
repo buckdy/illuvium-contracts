@@ -1,76 +1,18 @@
 import { BigNumber, BigNumberish, utils } from "ethers";
-import { BoxType, accessoryPrices, portraitPrices } from "../utils";
+import {
+  Portrait,
+  Accessory,
+  MintRequest,
+  PortraitMintParams,
+  AccessorySemiRandomMintParams,
+  AccessoryFullRandomMintParams,
+  BoxType,
+  ExpressionType,
+  FinishType,
+  MintResult,
+} from "./types";
 import { getBackgroundTierChance } from "./background_chances_utils";
-
-enum AccessoryType {
-  Skin,
-  Body,
-  EyeWear,
-  HeadWear,
-  Props,
-}
-
-enum FinishType {
-  Normal,
-  Holo,
-}
-
-enum ExpressionType {
-  Normal,
-  ExpressionA,
-  ExpressionB,
-}
-
-interface Portrait {
-  tokenId: BigNumberish;
-  boxType: BoxType;
-  tier: number;
-  illuvial: number;
-  backgroundTier: number;
-  backgroundIdx: number;
-  expression: ExpressionType;
-  finish: FinishType;
-}
-
-interface Accessory {
-  tokenId: BigNumber;
-  boxType: BoxType;
-  accessoryType: AccessoryType;
-  tier: number;
-  stage: number;
-}
-
-/// @dev Portrait mint params
-interface PortraitMintParams {
-  boxType: BoxType;
-  amount: BigNumber;
-}
-
-/// @dev Accessory semi random mint params
-interface AccessorySemiRandomMintParams {
-  accessoryType: AccessoryType;
-  boxType: BoxType;
-  amount: BigNumber;
-}
-
-/// @dev Accessory full random mint params
-interface AccessoryFullRandomMintParams {
-  boxType: BoxType;
-  amount: BigNumber;
-}
-
-/// @dev User's mint request data
-interface MintRequest {
-  requester: string;
-  portraitMintParams: PortraitMintParams[];
-  portraitAmount: BigNumber; // total portrait amount
-  accessorySemiRandomMintParams: AccessorySemiRandomMintParams[];
-  accessoryFullRandomMintParams: AccessoryFullRandomMintParams[];
-  accessoryAmount: BigNumber; // total accessory amount
-  randomNumber: BigNumber; // random number from chainlink
-  portraitStartTokenId: BigNumber; // portrait start token id for this request
-  accessoryStartTokenId: BigNumber; // accessory start token id for this request
-}
+import { accessoryPrices, portraitPrices } from "./utils";
 
 const toUint8 = (value: BigNumberish): BigNumber => {
   if (!(value instanceof BigNumber)) value = BigNumber.from(value);
@@ -106,12 +48,7 @@ export class IlluvitarsMintResults {
    * @return portraits Mintable portrait on-chain metadata
    * @return accessories Mintable accessory on-chain metadata
    */
-  static getMintResult(mintRequest: MintRequest): {
-    requester: string;
-    seed: BigNumber;
-    portraits: Portrait[];
-    accessories: Accessory[];
-  } {
+  static getMintResult(mintRequest: MintRequest): MintResult {
     if (mintRequest.randomNumber.eq(0)) throw "No random number generated";
     const requester = mintRequest.requester;
     const seed = mintRequest.randomNumber;
@@ -546,4 +483,4 @@ export class IlluvitarsMintResults {
   }
 }
 
-export const getMintResult = IlluvitarsMintResults.getMintResult;
+export const getMintResultJS = IlluvitarsMintResults.getMintResult;
