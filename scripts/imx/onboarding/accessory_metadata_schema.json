@@ -1,0 +1,11 @@
+[
+  {
+    "name": "accessory_stage",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "accessory_line",
+    "type": "text"
+  }
+]

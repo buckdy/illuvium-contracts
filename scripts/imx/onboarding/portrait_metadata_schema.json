@@ -1,0 +1,30 @@
+[
+  {
+    "name": "illuvial",
+    "type": "text"
+  },
+  {
+    "name": "illuvial_type",
+    "type": "text"
+  },
+  {
+    "name": "stage",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "background",
+    "type": "enum", // Not specified in the doc
+    "filterable": true
+  },
+  {
+    "name": "expression",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "finish",
+    "type": "enum",
+    "filterable": true
+  }
+]
