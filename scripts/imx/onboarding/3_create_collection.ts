@@ -44,6 +44,7 @@ async function create_collection(
   try {
     collection = await client.createCollection({
       name: collection_metadata.name,
+      description: collection_metadata.description,
       contract_address: collection_metadata.contract_address.toLowerCase(),
       owner_public_key: client_wallet._signingKey().publicKey,
       icon_url: collection_metadata.icon_url,
