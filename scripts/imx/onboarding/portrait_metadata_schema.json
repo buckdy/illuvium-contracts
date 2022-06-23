@@ -1,11 +1,17 @@
 [
   {
-    "name": "illuvial",
+    "name": "illuvial_tier",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "illuvial_line",
     "type": "text"
   },
   {
     "name": "illuvial_type",
-    "type": "text"
+    "type": "enum",
+    "filterable": true
   },
   {
     "name": "stage",
@@ -13,8 +19,13 @@
     "filterable": true
   },
   {
+    "name": "background_tier",
+    "type": "enum",
+    "filterable": true
+  },
+  {
     "name": "background",
-    "type": "enum", // Not specified in the doc
+    "type": "enum",
     "filterable": true
   },
   {

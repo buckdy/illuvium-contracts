@@ -35,7 +35,7 @@ const project_config: ProjectConfig = {
 const collection_config: CollectionConfig = {
   project_id: "PROJECT_ID", // Project ID where the collection will be created
   name: "COLLECTION_NAME", // Name of the collection
-  contract_address: "CONTRACT_ADDRESS", // Address of the ERC721 contract on L1
+  contract_address: "COLLECTION_ADDRESS", // Address of the ERC721 contract on L1
   icon_url: "", // URL or base64 encoded SVG image for the collection icon -- optional
   metadata_api_url: "", // The metadata API base URL (used to feed each token with unique metadata) -- optional
   collection_image_url: "", // URL or base64 encoded SVG image for the collection banner/tile -- optional
@@ -44,7 +44,7 @@ const collection_config: CollectionConfig = {
 // Relative configuration object
 // Metadata schema for the IMX collection -- 4_add_metadata_schema.js
 const collection_metadata_schema: CollectionMetadataSchema = {
-  contract_address: "0x3A1D519f6B9537322a8C4d0Ecccb0C0d0e2af061",
+  contract_address: "COLLECTION_ADDRESS",
   portrait: portrait_metadata_schema as MetadataSchema[],
   accessory: accessory_metadata_schema as MetadataSchema[],
 };

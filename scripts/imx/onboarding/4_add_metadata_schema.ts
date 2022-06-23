@@ -54,8 +54,8 @@ async function main() {
 
   // Get illuvitar collection name
   const illuvitar_collection_name = process.env.ILLUVITAR_COLLECTION ?? "";
-  if (!(illuvitar_collection_name in ["portrait", "accessory"]))
-    throw "ILLUVITAR_COLLECTION should be set to 'illuvitar' or 'accessory'";
+  if (!["portrait", "accessory"].includes(illuvitar_collection_name))
+    throw "ILLUVITAR_COLLECTION should be set to 'portrait' or 'accessory'";
 
   // Get IMX client instance
   const client = await get_imx_client_from_wallet(get_wallet(network.name), config.imx_client_config);
@@ -65,7 +65,7 @@ async function main() {
     await add_metadata_schema(
       client,
       config.collection_metadata_schema.contract_address,
-      config.collection_metadata_schema[illuvitar_collection_name],
+      <MetadataSchema[]>config.collection_metadata_schema[illuvitar_collection_name],
     ),
   );
 }

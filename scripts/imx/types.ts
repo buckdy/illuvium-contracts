@@ -1,5 +1,5 @@
 // types
-import { MetadataTypes, ImmutableXClientParams } from "@imtbl/imx-sdk";
+import { MetadataTypes } from "@imtbl/imx-sdk";
 import { Signer } from "@ethersproject/abstract-signer";
 
 export interface MetadataSchema {
@@ -15,8 +15,8 @@ export interface ProjectConfig {
 }
 
 export interface CollectionMetadata {
-  name: string;
-  contract_address: string;
+  name?: string;
+  description?: string;
   icon_url?: string;
   metadata_api_url?: string;
   collection_image_url?: string;
@@ -24,9 +24,12 @@ export interface CollectionMetadata {
 
 export interface CollectionConfig extends CollectionMetadata {
   project_id: string;
+  contract_address: string;
+  name: string;
 }
 
 export interface CollectionMetadataSchema {
+  [key: string]: string | MetadataSchema[];
   contract_address: string;
   portrait: MetadataSchema[];
   accessory: MetadataSchema[];

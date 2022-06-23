@@ -3,6 +3,7 @@ import { Web3, web3, artifacts } from "hardhat";
 
 // Get types
 import { CollectionMetadata, IMXClientConfig } from "./types";
+import { NullLiteral } from "typescript";
 
 // Get Web3 types
 import { TransactionReceipt } from "web3-core/types";
@@ -19,7 +20,7 @@ import { Wallet } from "@ethersproject/wallet";
 import { ImmutableXClient, ImmutableMethodResults, ERC721TokenType, UpdateCollectionsResults } from "@imtbl/imx-sdk";
 
 // using axios for IMX API requests
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 
 // config file contains known deployed token addresses, IMX settings
 import Config from "./config";
@@ -75,7 +76,7 @@ async function get_network_gas_price(
  *
  * @param sender address of the tx sender
  * @param contract_address illuvitar contract address
- * @param collection_name illuvitar collection name
+ * @param illuvitar_name the name of the illuvitar layer contract to instantiate
  * @param token_id ID of the land
  * @param operator the operator address to approve allowance
  * @param gas_limit gas cost limit
@@ -85,15 +86,14 @@ async function get_network_gas_price(
 async function approve_illuvitar_operator(
   sender: string,
   contract_address: string,
-  collection_name: string,
+  illuvitar_name: "portrait" | "accessory",
   token_id: string,
   operator: string,
   gas_limit?: string,
   gas_price?: string,
 ) {
-  if (!(collection_name in ["portrait", "accessory"])) throw "Invalid collection name";
   // instantiate ERC721 contract
-  const erc721_contract = get_land_erc721_contract(contract_address);
+  const erc721_contract = get_illuvitars_erc721_contract(contract_address, illuvitar_name);
 
   // check if it's already approved
   if ((await erc721_contract.methods.getApproved(token_id).call()) === operator) {
@@ -138,16 +138,17 @@ async function _wait_for_transaction(tx_hash: string, interval: number = 10000, 
  *
  * @param client ImmutableXClient -- should be the owner of the assetAddress contract
  * @param asset_address address of the underlying asset
- * @param collection_name illuvitar collection name
+ * @param illuvitar_name the name of the illuvitar layer contract to instantiate
  * @param token_id id of the token to deposit
  * @param gas_limit gas cost limit
  * @param gas_price price per gas
  * @param set_approval_if_needed set approval for stark contract if not done yet
  */
+/*
 async function _check_deposit_validity(
   client: ImmutableXClient,
   asset_address: string,
-  collection_name: string,
+  illuvitar_name: "portrait" | "accessory",
   token_id: string,
   gas_limit?: string,
   gas_price?: string,
@@ -160,15 +161,15 @@ async function _check_deposit_validity(
   }
 
   // Check if IMX's stark contract has approval to move asset
-  const erc721_contract = get_land_erc721_contract(asset_address);
+  const erc721_contract = get_illuvitars_erc721_contract(asset_address, illuvitar_name);
   if (
     (await erc721_contract.methods.getApproved(token_id).call()).toLowerCase() !== client.contractAddress.toLowerCase()
   ) {
     if (set_approval_if_needed)
       await approve_illuvitar_operator(
-        client.wallet.signer.signer.address,
+        client.address,
         asset_address,
-        collection_name,
+        illuvitar_name,
         token_id,
         client.contractAddress,
         gas_limit,
@@ -177,6 +178,7 @@ async function _check_deposit_validity(
     else throw "Approval for StarkContract to move the asset is needed";
   }
 }
+*/
 
 /**
  * @dev Configure Infura provider based on the network
@@ -216,7 +218,7 @@ function _get_api_preffix(network: string) {
  * @param n address index as defined in BIP-44 spec
  * @return ethers wallet instance
  */
-function get_wallet_from_mnemonic(network: string, mnemonic: string, n = 0) {
+export function get_wallet_from_mnemonic(network: string, mnemonic: string, n = 0): Wallet {
   const provider = get_provider(network);
 
   return Wallet.fromMnemonic(mnemonic, `m/44'/60'/0'/0/${n}`).connect(provider);
@@ -229,7 +231,7 @@ function get_wallet_from_mnemonic(network: string, mnemonic: string, n = 0) {
  * @param private_key private key of the underlying wallet
  * @return ethers wallet instance
  */
-function get_wallet_from_private_key(network: string, private_key: string) {
+export function get_wallet_from_private_key(network: string, private_key: string): Wallet {
   const provider = get_provider(network);
 
   return new Wallet(private_key, provider);
@@ -243,12 +245,14 @@ function get_wallet_from_private_key(network: string, private_key: string) {
  * @return ethersproject wallet instance
  */
 export function get_wallet(network: string, n = 0): Wallet {
+  /*
   const private_key = network === "ropsten" ? process.env.P_KEY3 : process.env.P_KEY1;
   if (private_key) {
     return get_wallet_from_private_key(network, private_key);
   }
   const mnemonic = network === "ropsten" ? process.env.MNEMONIC3 : process.env.MNEMONIC1;
-  return get_wallet_from_mnemonic(network, mnemonic ?? "", n);
+  */
+  return get_wallet_from_mnemonic(network, /*mnemonic*/ process.env.MNEMONIC ?? "", n);
 }
 
 /**
@@ -301,14 +305,16 @@ function get_land_sale_contract(land_sale_address: string) {
 /**
  * @dev Instantiate the LandERC721 contract
  *
- * @param land_erc721_address L1 address of LandERC721
+ * @param illuvitars_erc721_address L1 address of LandERC721
+ * @param illuvitar_name the name of the illuvitar layer contract to instantiate
  * @return LandERC721 instance
  */
-function get_land_erc721_contract(land_erc721_address: string) {
+function get_illuvitars_erc721_contract(illuvitars_erc721_address: string, illuvitar_name: "portrait" | "accessory") {
   // Get required ABIs
-  const land_erc721_abi = artifacts.require("LandERC721").abi;
+  const illuvitar_contract_name = illuvitar_name[0].toUpperCase() + illuvitar_name.substring(1) + "Layer";
+  const illuvitars_erc721_abi = artifacts.require(illuvitar_contract_name).abi;
 
-  return new web3.eth.Contract(land_erc721_abi, land_erc721_address);
+  return new web3.eth.Contract(illuvitars_erc721_abi, illuvitars_erc721_address);
 }
 
 /**
@@ -345,13 +351,13 @@ function get_plot_store(blueprint) {
  * @param blueprint token metadata
  * @return the mint result metadata or null if minting fails
  */
-async function mint_l2(
+export async function mint_l2(
   client: ImmutableXClient,
   asset_address: string,
   to: string,
   token_id: string,
   blueprint: string,
-) {
+): Promise<ImmutableMethodResults.ImmutableOffchainMintV2Result> {
   // a token to mint - plotStorePack should be a string representation of uint256 in decimal format
   const token = {
     id: token_id.toString(),
@@ -384,7 +390,11 @@ async function mint_l2(
  * @param token_id ID the token
  * @return deleted token metadata
  */
-async function burn(client: ImmutableXClient, asset_address: string, token_id: string) {
+export async function burn(
+  client: ImmutableXClient,
+  asset_address: string,
+  token_id: string,
+): Promise<ImmutableMethodResults.ImmutableBurnResult> {
   const token = {
     type: ERC721TokenType.ERC721,
     data: {
@@ -568,7 +578,7 @@ async function get_mint(network: string, asset_address: string, token_id: string
  * @param loop_n_times number of times to request for another batch of assets
  * @return assets found in L2
  */
-async function get_all_assets(client: ImmutableXClient, asset_address: string, loop_n_times: number) {
+async function get_all_assets(client: ImmutableXClient, asset_address: string, loop_n_times?: number) {
   let assets = [] as any[];
   let response;
   let cursor;
@@ -607,7 +617,7 @@ async function get_all_trades(
   network: string,
   asset_address: string,
   token_id: string,
-  loop_n_times: number,
+  loop_n_times?: number,
   min_timestamp?: string | number,
   max_timestamp?: string | number,
   order_by: string = "timestamps",
@@ -660,9 +670,9 @@ async function get_all_transfers(
   network: string,
   asset_address: string,
   token_id: string,
-  loop_n_times: number,
-  min_timestamp: string,
-  max_timestamp: string,
+  loop_n_times?: number,
+  min_timestamp?: string,
+  max_timestamp?: string,
   order_by: string = "timestamps",
   page_size: number = 1,
   direction: string = "desc",
@@ -673,15 +683,17 @@ async function get_all_transfers(
 
   do {
     response = await axios.get(`https://api${_get_api_preffix(network)}.x.immutable.com/v1/transfers`, {
-      token_type: ERC721TokenType.ERC721,
-      token_id: token_id,
-      token_address: asset_address,
-      min_timestamp,
-      max_timestamp,
-      page_size,
-      cursor,
-      order_by,
-      direction,
+      params: {
+        token_type: ERC721TokenType.ERC721,
+        token_id: token_id,
+        token_address: asset_address,
+        min_timestamp,
+        max_timestamp,
+        page_size,
+        cursor,
+        order_by,
+        direction,
+      },
     });
     cursor = response.data.cursor;
     transfers = transfers.concat(response.data.result);
@@ -740,23 +752,24 @@ async function verify(
 /**
  * @dev Get snapshot of latest land owner on L1
  *
- * @param land_erc721_address L1 address of LandERC721
+ * @param illuvitar_erc721_address L1 address of LandERC721
  * @param token_id ID of the token
  * @param from_block the block from which search for the snapshot
  * @param to_block the block to which search for the snapshot
  * @return latest owner on L1 for the given interval
  */
 async function get_owner_of_snapshot_l1(
-  land_erc721_address: string,
+  illuvitar_erc721_address: string,
+  illuvitar_name: "portrait" | "accessory",
   token_id: string,
   from_block?: string | number,
   to_block?: string | number,
 ) {
   // Get landERC721 contract instance
-  const land_erc721 = get_land_erc721_contract(land_erc721_address);
+  const illuvitar_erc721 = get_illuvitars_erc721_contract(illuvitar_erc721_address, illuvitar_name);
 
   // Get past Transfer event from the ERC721 asset contract
-  const transfer_events = await land_erc721.getPastEvents("Transfer", {
+  const transfer_events = await illuvitar_erc721.getPastEvents("Transfer", {
     filter: { token_id },
     fromBlock: from_block,
     toBlock: to_block,
@@ -783,7 +796,7 @@ async function get_owner_of_snapshot_l1(
  * @param order_id ID of the order
  * @return order metadata
  */
-async function get_order(network: string, order_id: string) {
+export async function get_order(network: string, order_id: string): Promise<AxiosResponse | null> {
   // Get the order given order ID
   const response = await axios.get(`https://api${_get_api_preffix(network)}.x.immutable.com/v1/orders/${order_id}`);
 
@@ -806,13 +819,14 @@ async function get_order(network: string, order_id: string) {
  * @param to_block the block to which search for the snapshot
  * @return latest owner on L2 for the given interval
  */
-async function get_owner_of_snapshot_l2(
+/*
+export async function get_owner_of_snapshot_l2(
   network: string,
   asset_address: string,
   token_id: string,
   from_block?: string | number,
   to_block?: string | number,
-) {
+): Promise<string | NullLiteral> {
   // Get timestamp from blocks
   const min_timestamp =
     from_block === undefined ? undefined : (await web3.eth.getBlock(from_block)).timestamp.toString();
@@ -822,7 +836,7 @@ async function get_owner_of_snapshot_l2(
   let latest_trade = (await get_all_trades(network, asset_address, token_id, 1, min_timestamp, max_timestamp))?.pop();
   latest_trade =
     latest_trade !== undefined
-      ? { timestamp: latest_trade.timestamp, receiver: (await get_order(network, latest_trade.b.order_id)).user }
+      ? { timestamp: latest_trade.timestamp, receiver: (await get_order(network, latest_trade.b.order_id))?.user }
       : { timestamp: 0 };
 
   // Get latest transfer
@@ -839,6 +853,7 @@ async function get_owner_of_snapshot_l2(
   // Othewise, return latest trade receiver
   return latest_trade.receiver ?? null;
 }
+*/
 
 /**
  * @dev Rollback and re-mint asset to a new ERC721 collection on L2
@@ -851,7 +866,8 @@ async function get_owner_of_snapshot_l2(
  * @param from_block the block from to get the snapshots (PlotBought events)
  * @param to_block the end block to get the snapshots (PlotBought events)
  */
-async function rollback(
+/*
+export async function rollback(
   network: string,
   land_sale_address: string,
   client: ImmutableXClient,
@@ -859,7 +875,7 @@ async function rollback(
   to_asset_address: string,
   from_block?: string | number,
   to_block?: string | number,
-) {
+): Promise<void> {
   // Get past PlotBoughtL2 events to a certain block
   const past_events = await get_plot_bought_l2_events(land_sale_address, from_block, to_block);
 
@@ -895,31 +911,32 @@ async function rollback(
     log.info(`Migration from ${from_asset_address} to ${to_asset_address} completed!`);
   }
 }
+*/
 
 /**
  * @dev Deposit asset from L1 into L2 (IMX)
  *
  * @param client ImmutableXClient client instance
  * @param asset_address address of the asset
- * @param collection_name illuvitar collection name
+ * @param illuvitar_name the name of the illuvitar layer contract to instantiate
  * @param token_id token ID to deposit
  * @param wait_for_tx whether to wait for deposit transaction to complete or not
  * @param gas_limit gas cost limit
  * @param gas_price price per gas
  * @returns deposit receipt, if `wait_for_tx` is true, deposit transaction hash if not
  */
+/*
 export async function deposit(
   client: ImmutableXClient,
   asset_address: string,
-  collection_name: string,
+  illuvitar_name: "portrait" | "accessory",
   token_id: string,
   wait_for_tx: boolean = true,
   gas_limit?: string,
   gas_price?: string,
 ): Promise<TransactionReceipt | string> {
-  if (!(collection_name in ["portrait", "accessory"])) throw "Invalid collection name";
   // Check deposit transaction validity
-  await _check_deposit_validity(client, asset_address, collection_name, token_id, gas_limit, gas_price);
+  await _check_deposit_validity(client, asset_address, illuvitar_name, token_id, gas_limit, gas_price);
 
   const deposit_tx = await client.deposit({
     quantity: BigNumber.from("1"),
@@ -939,6 +956,7 @@ export async function deposit(
   // Return deposit transaction receipt or transaction hash
   return deposit;
 }
+*/
 
 /**
  * @dev update an existing collection's metadata
@@ -959,7 +977,7 @@ export async function update_collection_metadata(
 ): Promise<UpdateCollectionsResults> {
   // Update collection metadata
   const update_collection_result = await client.updateCollection(asset_address.toLowerCase(), {
-    name: new_collection_metadata.collection_name,
+    name: new_collection_metadata.name,
     description: new_collection_metadata.description,
     icon_url: new_collection_metadata.icon_url,
     metadata_api_url: new_collection_metadata.metadata_api_url,
@@ -971,29 +989,3 @@ export async function update_collection_metadata(
 
   return update_collection_result;
 }
-
-// export public module API
-module.exports = {
-  get_imx_client_from_wallet,
-  get_imx_client,
-  get_land_sale_contract,
-  get_land_erc721_contract,
-  get_plot_bought_l2_events,
-  mint_l2,
-  burn,
-  prepare_withdraw,
-  complete_withdraw,
-  get_asset,
-  get_all_assets,
-  get_all_trades,
-  get_all_transfers,
-  get_mint,
-  rollback,
-  verify,
-  deposit,
-  update_collection_metadata,
-  approve_illuvitar_operator,
-  get_network_gas_price,
-  get_wallet,
-  get_websocket_provider,
-};
