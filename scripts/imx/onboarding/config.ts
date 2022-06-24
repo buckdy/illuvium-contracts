@@ -35,7 +35,7 @@ const project_config: ProjectConfig = {
 const collection_config: CollectionConfig = {
   project_id: "PROJECT_ID", // Project ID where the collection will be created
   name: "COLLECTION_NAME", // Name of the collection
-  description: "COLLECTION_DESCRIPTIO", // Description for the asset collection
+  description: "COLLECTION_DESCRIPTION", // Description for the asset collection
   contract_address: "COLLECTION_ADDRESS", // Address of the ERC721 contract on L1
   icon_url: "", // URL or base64 encoded SVG image for the collection icon -- optional
   metadata_api_url: "", // The metadata API base URL (used to feed each token with unique metadata) -- optional
