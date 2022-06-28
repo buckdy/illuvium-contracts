@@ -1,49 +1,63 @@
+import { network } from "hardhat";
+
+// types
 import { ImmutableXClient, CreateCollectionsResult } from "@imtbl/imx-sdk";
-import { getWalletFromMnemonic, getImmutableXClientFromWallet } from "../common";
-import Config, { NETWORK } from "./config";
+import { CollectionConfig } from "../types";
+import { Wallet } from "ethers";
+// Get IMX common functions
+import { get_wallet, get_imx_client_from_wallet } from "../common";
+
+// Onboarding config file
+import Config from "./config";
+
+// using logger instead of console to allow output control
+import log, { LogLevelDesc } from "loglevel";
+log.setLevel(<LogLevelDesc>process.env.LOG_LEVEL ?? "info");
 
 /**
  * @dev creates a collection for the project
  *
+ * @param client_wallet the ethers wallet of the client who initialised the IMXClient
  * @param client ImmutableXClient instance
- * @param projectId ID of the project which will own the collection
- * @param collectionMetadata containing the `contract_address`, `icon_url`,
+ * @param project_id ID of the project which will own the collection
+ * @param collection_metadata containing the `contract_address`, `icon_url`,
  * 	`metadata_api_url`, `collection_image_url` and `name` fields
  * @return collection metadata
  */
-async function createCollection(
+async function create_collection(
+  client_wallet: Wallet,
   client: ImmutableXClient,
-  clientPublicKey: string,
-  projectId: string,
-  collectionMetadata: any,
+  project_id: string,
+  collection_metadata: CollectionConfig,
 ): Promise<CreateCollectionsResult> {
   // Check if project exists
   try {
-    await client.getProject({ project_id: parseInt(projectId, 10) });
+    await client.getProject({ project_id: parseInt(project_id, 10) });
   } catch (error) {
-    console.error(error);
+    log.error(error);
     throw JSON.stringify(error, null, 2);
   }
 
   // If project exists, create a collection for it
-  console.log("Creating collection...");
-  let collection: CreateCollectionsResult;
+  log.info("Creating collection...");
+  let collection;
   try {
     collection = await client.createCollection({
-      name: collectionMetadata.name,
-      contract_address: collectionMetadata.contract_address.toLowerCase(),
-      owner_public_key: clientPublicKey.toLowerCase(),
-      icon_url: collectionMetadata.icon_url,
-      metadata_api_url: collectionMetadata.metadata_api_url,
-      collection_image_url: collectionMetadata.collection_image_url,
-      project_id: parseInt(projectId, 10),
+      name: collection_metadata.name,
+      description: collection_metadata.description,
+      contract_address: collection_metadata.contract_address.toLowerCase(),
+      owner_public_key: client_wallet._signingKey().publicKey,
+      icon_url: collection_metadata.icon_url,
+      metadata_api_url: collection_metadata.metadata_api_url,
+      collection_image_url: collection_metadata.collection_image_url,
+      project_id: parseInt(project_id, 10),
     });
   } catch (error) {
     throw JSON.stringify(error, null, 2);
   }
 
-  console.log("Created collection:");
-  console.log(JSON.stringify(collection, null, 2));
+  log.info("Created collection:");
+  log.info(JSON.stringify(collection, null, 2));
   return collection;
 }
 
@@ -52,15 +66,14 @@ async function createCollection(
 // see https://javascript.plainenglish.io/writing-asynchronous-programs-in-javascript-9a292570b2a6
 async function main() {
   // Get configuration for network
-  const config = Config(NETWORK);
-
-  const wallet = getWalletFromMnemonic(NETWORK, config.mnemonic, config.address_index);
+  const config = Config(network.name);
 
   // Get IMX client instance
-  const client = await getImmutableXClientFromWallet(wallet, config.IMXClientConfig);
+  const client_wallet = get_wallet(network.name);
+  const client = await get_imx_client_from_wallet(client_wallet, config.imx_client_config);
 
   // Create collection given client, project id, collection name and ERC721 L1 contract address
-  await createCollection(client, wallet.publicKey, config.collection.project_id, config.collection);
+  await create_collection(client_wallet, client, config.collection.project_id, config.collection);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

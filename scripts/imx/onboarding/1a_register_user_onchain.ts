@@ -10,29 +10,28 @@ import Config from "./config";
 import log, { LogLevelDesc } from "loglevel";
 log.setLevel(<LogLevelDesc>process.env.LOG_LEVEL ?? "info");
 
-/**
- * @dev Registers new IMX Client for a user
- *
- * @param client already configured ImmutableXClient instance
- */
-async function register_user(client: ImmutableXClient) {
-  log.info("Registering user...");
+async function register_user_onchain(client: ImmutableXClient) {
+  log.info("Registering user onchain...");
+
+  // get user signature
+  let user_signature;
+  let onchain_user;
   try {
-    await client.getUser({
-      user: client.address.toLowerCase(),
+    user_signature = await client.getSignableRegistration({
+      etherKey: client.address,
+      starkPublicKey: client.starkPublicKey,
     });
-    log.info(`User ${client.address.toLowerCase()} already registered`);
-  } catch {
-    try {
-      await client.registerImx({
-        etherKey: client.address.toLowerCase(),
-        starkPublicKey: client.starkPublicKey.toLowerCase(),
-      });
-      log.info(`User ${client.address.toLowerCase()} registered successfully!`);
-    } catch (error) {
-      console.log(error);
-      throw JSON.stringify(error, null, 2);
-    }
+    log.info(`User signature: ${user_signature.operator_signature}`);
+
+    onchain_user = await client.registerStark({
+      etherKey: client.address,
+      starkPublicKey: client.starkPublicKey,
+      operatorSignature: user_signature.operator_signature,
+    });
+    log.info(`Onchain user registered: ${onchain_user}`);
+  } catch (error) {
+    console.log(error);
+    throw JSON.stringify(error, null, 2);
   }
 }
 
@@ -46,8 +45,8 @@ async function main() {
   // Get IMX client instance
   const client = await get_imx_client_from_wallet(get_wallet(network.name), config.imx_client_config);
 
-  // Register user for given `wallet` and `IMXClientConfig`
-  await register_user(client);
+  // Register user onchain for given `wallet` and `IMXClientConfig`
+  await register_user_onchain(client);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

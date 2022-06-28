@@ -1,0 +1,41 @@
+[
+  {
+    "name": "illuvial_tier",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "illuvial_line",
+    "type": "text"
+  },
+  {
+    "name": "illuvial_type",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "stage",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "background_tier",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "background",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "expression",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "finish",
+    "type": "enum",
+    "filterable": true
+  }
+]
