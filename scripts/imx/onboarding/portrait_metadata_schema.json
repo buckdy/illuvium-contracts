@@ -1,12 +1,12 @@
 [
   {
+    "name": "name",
+    "type": "text"
+  },
+  {
     "name": "illuvial_tier",
     "type": "enum",
     "filterable": true
-  },
-  {
-    "name": "illuvial_line",
-    "type": "text"
   },
   {
     "name": "illuvial_type",

@@ -1,5 +1,9 @@
 [
   {
+    "name": "name",
+    "type": "text"
+  },
+  {
     "name": "accessory_tier",
     "type": "enum",
     "filterable": true
@@ -18,9 +22,5 @@
     "name": "accessory_stage",
     "type": "enum",
     "filterable": true
-  },
-  {
-    "name": "accessory_line",
-    "type": "text"
   }
 ]
