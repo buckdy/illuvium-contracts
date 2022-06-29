@@ -28,3 +28,16 @@ enum FinishType {
     Normal,
     Holo
 }
+
+enum BackgroundLine {
+    Dots,
+    Flash,
+    Hex,
+    Rain,
+    Spotlight,
+    Mozart,
+    Affinity,
+    Arena,
+    Token,
+    Encounter
+}
