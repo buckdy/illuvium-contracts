@@ -4,6 +4,49 @@
     "type": "text"
   },
   {
+    "name": "image_url"
+  },
+  {
+    "name": "eye_wear",
+    "type": "text"
+  },
+  {
+    "name": "body_wear",
+    "type": "text"
+  },
+  {
+    "name": "head_wear",
+    "type": "text"
+  },
+  {
+    "name": "props",
+    "type": "text"
+  },
+  {
+    "name": "skin",
+    "type": "text"
+  },
+  {
+    "name": "eye_id",
+    "type": "discrete"
+  },
+  {
+    "name": "body_id",
+    "type": "discrete"
+  },
+  {
+    "name": "head_id",
+    "type": "discrete"
+  },
+  {
+    "name": "props_id",
+    "type": "discrete"
+  },
+  {
+    "name": "skin_id",
+    "type": "discrete"
+  },
+  {
     "name": "illuvial_tier",
     "type": "enum",
     "filterable": true

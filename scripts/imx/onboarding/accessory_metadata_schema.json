@@ -4,6 +4,9 @@
     "type": "text"
   },
   {
+    "name": "image_url"
+  },
+  {
     "name": "accessory_tier",
     "type": "enum",
     "filterable": true
