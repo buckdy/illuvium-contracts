@@ -39,15 +39,19 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     mapping(BoxType => PortraitMintInfo) public portraitMintInfo;
     /// @dev Accessory mint information
     mapping(BoxType => AccessoryMintInfo) public accessoryMintInfo;
-    /// @dev Background tier chances
-    mapping(uint8 => mapping(BoxType => uint16[MAX_TIER])) public backgroundTierChances;
     /// @dev expression probability
     uint16[EXPRESSION_COUNT] public expressionProbability;
     /// @dev stage probability
     uint16[STAGE_COUNT] public stageProbability;
 
-    /// @dev Background count per tier
-    uint8[TIER_COUNT] public backgroundCounts;
+    /// @dev Background tier chances
+    mapping(uint8 => mapping(BoxType => uint16[MAX_TIER])) public backgroundTierChances;
+    /// @dev Background line info per tier
+    mapping(uint8 => BackgroundLine[]) public backgroundLines;
+    /// @dev Background stages info per (tier, line)
+    mapping(uint8 => mapping(BackgroundLine => uint8[])) public backgroundStages;
+    /// @dev Background variation count per (tier, line, stage)
+    mapping(uint8 => mapping(BackgroundLine => mapping(uint8 => uint8))) public backgroundVariations;
     /// @dev Illuvial count per tier
     uint8[TIER_COUNT] public illuvialCounts;
 
@@ -119,7 +123,9 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         uint8 tier;
         uint8 illuvial;
         uint8 backgroundTier;
-        uint8 backgroundIdx;
+        BackgroundLine backgroundLine;
+        uint8 backgroundStage;
+        uint8 backgroundVariation;
         ExpressionType expression;
         FinishType finish;
     }
@@ -190,7 +196,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
 
         _initializePortraitMintInfo();
         _initializeAccessoryMintInfo();
-        _initializeBackgroundTierChances();
+        _initializeBackgroundGenerationInfo();
     }
 
     /**
@@ -422,7 +428,24 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         (_rand, portrait.illuvial) = _getQuotientAndRemainder8(_rand, illuvialCounts[tier]);
 
         (_rand, portrait.backgroundTier) = _getBackgroundTier(tier, mintParam.boxType, _rand);
-        (_rand, portrait.backgroundIdx) = _getQuotientAndRemainder8(_rand, backgroundCounts[portrait.backgroundTier]);
+
+        uint8 backgroundIdx;
+        (_rand, backgroundIdx) = _getQuotientAndRemainder8(
+            _rand,
+            uint8(backgroundLines[portrait.backgroundTier].length)
+        );
+        portrait.backgroundLine = backgroundLines[portrait.backgroundTier][backgroundIdx];
+
+        (_rand, backgroundIdx) = _getQuotientAndRemainder8(
+            _rand,
+            uint8(backgroundStages[portrait.backgroundTier][portrait.backgroundLine].length)
+        );
+        portrait.backgroundStage = backgroundStages[portrait.backgroundTier][portrait.backgroundLine][backgroundIdx];
+
+        (_rand, portrait.backgroundVariation) = _getQuotientAndRemainder8(
+            _rand,
+            backgroundVariations[portrait.backgroundTier][portrait.backgroundLine][portrait.backgroundStage]
+        );
 
         (_rand, portrait.expression) = _getExpression(_rand);
         (, portrait.finish) = _getFinish(_rand, mintParam.boxType);
@@ -589,7 +612,6 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
             holoProbability: 5
         });
 
-        backgroundCounts = [10, 10, 10, 10, 5, 5];
         expressionProbability = [50, 80, 100];
         illuvialCounts = [3, 6, 5, 4, 4, 3];
     }
@@ -636,7 +658,7 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     /**
      * @dev Initialize background tier chances
      */
-    function _initializeBackgroundTierChances() internal {
+    function _initializeBackgroundGenerationInfo() internal {
         // tier 1
         backgroundTierChances[1][BoxType.Bronze] = [6457, 9201, 9758, 9919, 10000];
         backgroundTierChances[1][BoxType.Silver] = [3948, 7443, 9191, 9838, 10000];
@@ -671,6 +693,40 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         backgroundTierChances[5][BoxType.Gold] = [3200, 7680, 9440, 9920, 10000];
         backgroundTierChances[5][BoxType.Platinum] = [1000, 3400, 6100, 9300, 10000];
         backgroundTierChances[5][BoxType.Diamond] = [535, 2246, 4652, 7326, 10000];
+
+        // background line, stage, variation info
+        backgroundLines[0] = [BackgroundLine.Dots];
+        backgroundStages[0][BackgroundLine.Dots] = [1];
+        backgroundVariations[0][BackgroundLine.Dots][1] = 10;
+
+        backgroundLines[1] = [BackgroundLine.Flash];
+        backgroundStages[1][BackgroundLine.Flash] = [1];
+        backgroundVariations[1][BackgroundLine.Flash][1] = 10;
+
+        backgroundLines[2] = [BackgroundLine.Hex, BackgroundLine.Rain];
+        backgroundStages[2][BackgroundLine.Hex] = [2];
+        backgroundStages[2][BackgroundLine.Rain] = [3];
+        backgroundVariations[2][BackgroundLine.Hex][2] = 8;
+        backgroundVariations[2][BackgroundLine.Rain][3] = 8;
+
+        backgroundLines[3] = [BackgroundLine.Spotlight, BackgroundLine.Mozart];
+        backgroundStages[3][BackgroundLine.Spotlight] = [3];
+        backgroundStages[3][BackgroundLine.Mozart] = [2];
+        backgroundVariations[3][BackgroundLine.Spotlight][3] = 5;
+        backgroundVariations[3][BackgroundLine.Mozart][2] = 8;
+
+        backgroundLines[4] = [BackgroundLine.Affinity, BackgroundLine.Arena];
+        backgroundStages[4][BackgroundLine.Affinity] = [1];
+        backgroundStages[4][BackgroundLine.Arena] = [1];
+        backgroundVariations[4][BackgroundLine.Affinity][1] = 5;
+        backgroundVariations[4][BackgroundLine.Arena][1] = 2;
+
+        backgroundLines[5] = [BackgroundLine.Token, BackgroundLine.Encounter];
+        backgroundStages[5][BackgroundLine.Token] = [1, 2];
+        backgroundStages[5][BackgroundLine.Encounter] = [3];
+        backgroundVariations[5][BackgroundLine.Token][1] = 1;
+        backgroundVariations[5][BackgroundLine.Token][2] = 1;
+        backgroundVariations[5][BackgroundLine.Encounter][3] = 2;
     }
 
     function _getTier(uint16[TIER_COUNT] memory tierChances, uint16 chance) internal pure returns (uint8) {
