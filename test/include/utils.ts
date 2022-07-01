@@ -8,6 +8,7 @@ import { randomBytes } from "crypto";
 import {
   AccessoryType,
   BoxType,
+  BackgroundLine,
   IAccessoryPrices,
   PortraitMintParams,
   AccessorySemiRandomMintParams,
@@ -52,6 +53,89 @@ export const portraitPrices = {
   [BoxType.Platinum]: centiethers(75),
   [BoxType.Diamond]: centiethers(250),
 };
+
+// mapping (tier => BackgroundLine[])
+export const backgroundLines: Record<number, BackgroundLine[]> = [
+  [BackgroundLine.Dots],
+  [BackgroundLine.Flash],
+  [BackgroundLine.Hex, BackgroundLine.Rain],
+  [BackgroundLine.Spotlight, BackgroundLine.Mozart],
+  [BackgroundLine.Affinity, BackgroundLine.Arena],
+  [BackgroundLine.Token, BackgroundLine.Encounter],
+];
+
+// mapping (tier => BackgroundLine => BackgroundStage[])
+export const backgroundStages: Record<number, Record<number, number[]>> = [
+  {
+    [BackgroundLine.Dots]: [1],
+  },
+  {
+    [BackgroundLine.Flash]: [1],
+  },
+  {
+    [BackgroundLine.Hex]: [2],
+    [BackgroundLine.Rain]: [3],
+  },
+  {
+    [BackgroundLine.Spotlight]: [3],
+    [BackgroundLine.Mozart]: [2],
+  },
+  {
+    [BackgroundLine.Affinity]: [1],
+    [BackgroundLine.Arena]: [1],
+  },
+  {
+    [BackgroundLine.Token]: [1, 2],
+    [BackgroundLine.Encounter]: [3],
+  },
+];
+
+// mapping (tier => BackgroundLine => BackgroundStage => BackgroundVariations)
+export const backgroundVariations: Record<number, Record<number, Record<number, number>>> = [
+  {
+    [BackgroundLine.Dots]: {
+      1: 10,
+    },
+  },
+  {
+    [BackgroundLine.Flash]: {
+      1: 10,
+    },
+  },
+  {
+    [BackgroundLine.Hex]: {
+      2: 8,
+    },
+    [BackgroundLine.Rain]: {
+      3: 8,
+    },
+  },
+  {
+    [BackgroundLine.Spotlight]: {
+      3: 5,
+    },
+    [BackgroundLine.Mozart]: {
+      2: 8,
+    },
+  },
+  {
+    [BackgroundLine.Affinity]: {
+      1: 5,
+    },
+    [BackgroundLine.Arena]: {
+      1: 2,
+    },
+  },
+  {
+    [BackgroundLine.Token]: {
+      1: 1,
+      2: 1,
+    },
+    [BackgroundLine.Encounter]: {
+      3: 2,
+    },
+  },
+];
 
 // generates random integer in [from, to) range
 export const random_int = (from: number, to: number): number => {

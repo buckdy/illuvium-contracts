@@ -7,6 +7,11 @@
     "name": "image_url"
   },
   {
+    "name": "box_type",
+    "type": "enum",
+    "filterable": true
+  },
+  {
     "name": "eye_wear",
     "type": "text"
   },

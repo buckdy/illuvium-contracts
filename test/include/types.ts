@@ -33,13 +33,28 @@ export enum ExpressionType {
   ExpressionB,
 }
 
+export enum BackgroundLine {
+  Dots,
+  Flash,
+  Hex,
+  Rain,
+  Spotlight,
+  Mozart,
+  Affinity,
+  Arena,
+  Token,
+  Encounter,
+}
+
 export interface Portrait {
   tokenId: BigNumberish;
   boxType: BoxType;
   tier: number;
   illuvial: number;
   backgroundTier: number;
-  backgroundIdx: number;
+  backgroundLine: BackgroundLine;
+  backgroundStage: number;
+  backgroundVariation: number;
   expression: ExpressionType;
   finish: FinishType;
 }

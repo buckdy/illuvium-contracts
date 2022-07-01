@@ -56,7 +56,9 @@ describe("Minter", () => {
         tier: portrait.tier,
         illuvial: portrait.illuvial,
         backgroundTier: portrait.backgroundTier,
-        backgroundIdx: portrait.backgroundIdx,
+        backgroundLine: portrait.backgroundLine,
+        backgroundStage: portrait.backgroundStage,
+        backgroundVariation: portrait.backgroundVariation,
         expression: portrait.expression,
         finish: portrait.finish,
       }));

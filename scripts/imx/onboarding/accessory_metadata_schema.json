@@ -7,17 +7,17 @@
     "name": "image_url"
   },
   {
+    "name": "box_type",
+    "type": "enum",
+    "filterable": true
+  },
+  {
     "name": "accessory_tier",
     "type": "enum",
     "filterable": true
   },
   {
     "name": "accessory_type",
-    "type": "enum",
-    "filterable": true
-  },
-  {
-    "name": "accessory_slot",
     "type": "enum",
     "filterable": true
   },

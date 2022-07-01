@@ -7,12 +7,13 @@ import {
   AccessorySemiRandomMintParams,
   AccessoryFullRandomMintParams,
   BoxType,
+  BackgroundLine,
   ExpressionType,
   FinishType,
   MintResult,
 } from "./types";
 import { getBackgroundTierChance } from "./background_chances_utils";
-import { accessoryPrices, portraitPrices } from "./utils";
+import { accessoryPrices, portraitPrices, backgroundLines, backgroundStages, backgroundVariations } from "./utils";
 
 const toUint8 = (value: BigNumberish): BigNumber => {
   if (!(value instanceof BigNumber)) value = BigNumber.from(value);
@@ -162,9 +163,30 @@ export class IlluvitarsMintResults {
     // eslint-disable-next-line prefer-const
     [_rand, backgroundIdxBN] = IlluvitarsMintResults._getQuotientAndRemainder8(
       _rand,
-      IlluvitarsMintResults.backgroundCounts[portrait.backgroundTier],
+      toUint8(IlluvitarsMintResults._backgroundLinesLength(portrait.backgroundTier)),
     );
-    portrait.backgroundIdx = backgroundIdxBN.toNumber();
+    portrait.backgroundLine = IlluvitarsMintResults._backgroundLines(
+      portrait.backgroundTier,
+      backgroundIdxBN.toNumber(),
+    );
+
+    [_rand, backgroundIdxBN] = IlluvitarsMintResults._getQuotientAndRemainder8(
+      _rand,
+      toUint8(IlluvitarsMintResults._backgroundStagesLength(portrait.backgroundTier, portrait.backgroundLine)),
+    );
+    portrait.backgroundStage = IlluvitarsMintResults._backgroundStages(
+      portrait.backgroundTier,
+      portrait.backgroundLine,
+      backgroundIdxBN.toNumber(),
+    );
+
+    let backgroundVariationBN;
+    // eslint-disable-next-line prefer-const
+    [_rand, backgroundVariationBN] = IlluvitarsMintResults._getQuotientAndRemainder8(
+      _rand,
+      backgroundVariations[portrait.backgroundTier][portrait.backgroundLine][portrait.backgroundStage],
+    );
+    portrait.backgroundVariation = backgroundVariationBN.toNumber();
 
     [_rand, portrait.expression] = IlluvitarsMintResults._getExpression(_rand);
     [, portrait.finish] = IlluvitarsMintResults._getFinish(_rand, mintParam.boxType);
@@ -476,6 +498,26 @@ export class IlluvitarsMintResults {
 
   static _backgroundTierChances(tier: number, boxType: BoxType): number[] {
     return getBackgroundTierChance(tier, boxType);
+  }
+
+  static _backgroundLinesLength(tier: number): number {
+    return backgroundLines[tier].length;
+  }
+
+  static _backgroundLines(tier: number, index: number): BackgroundLine {
+    return backgroundLines[tier][index];
+  }
+
+  static _backgroundStagesLength(tier: number, backgroundLine: BackgroundLine): number {
+    return backgroundStages[tier][backgroundLine].length;
+  }
+
+  static _backgroundStages(tier: number, backgroundLine: BackgroundLine, index: number): number {
+    return backgroundStages[tier][backgroundLine][index];
+  }
+
+  static _backgroundVariations(tier: number, backgroundLine: BackgroundLine, backgroundStage: number): number {
+    return backgroundVariations[tier][backgroundLine][backgroundStage];
   }
 
   static _illuvitarsHash(rand: BigNumber): BigNumber {
