@@ -12,17 +12,22 @@
     "filterable": true
   },
   {
-    "name": "accessory_tier",
+    "name": "tier",
     "type": "enum",
     "filterable": true
   },
   {
-    "name": "accessory_type",
+    "name": "type",
     "type": "enum",
     "filterable": true
   },
   {
-    "name": "accessory_stage",
+    "name": "line",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "stage",
     "type": "enum",
     "filterable": true
   }

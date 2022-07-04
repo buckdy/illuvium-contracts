@@ -52,7 +52,7 @@
     "type": "discrete"
   },
   {
-    "name": "illuvial_tier",
+    "name": "tier",
     "type": "enum",
     "filterable": true
   },
@@ -72,7 +72,12 @@
     "filterable": true
   },
   {
-    "name": "background",
+    "name": "background_line",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "background_stage",
     "type": "enum",
     "filterable": true
   },
