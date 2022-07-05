@@ -17,7 +17,7 @@
     "filterable": true
   },
   {
-    "name": "type",
+    "name": "slot",
     "type": "enum",
     "filterable": true
   },

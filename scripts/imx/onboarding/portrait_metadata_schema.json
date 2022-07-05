@@ -17,11 +17,6 @@
     "filterable": true
   },
   {
-    "name": "type",
-    "type": "enum",
-    "filterable": true
-  },
-  {
     "name": "line",
     "type": "enum",
     "filterable": true
