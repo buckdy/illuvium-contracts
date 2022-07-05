@@ -12,6 +12,51 @@
     "filterable": true
   },
   {
+    "name": "tier",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "type",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "line",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "stage",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "expression",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "finish",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "background_tier",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "background_line",
+    "type": "enum",
+    "filterable": true
+  },
+  {
+    "name": "background_stage",
+    "type": "enum",
+    "filterable": true
+  },
+  {
     "name": "eye_wear",
     "type": "text"
   },
@@ -50,45 +95,5 @@
   {
     "name": "skin_id",
     "type": "discrete"
-  },
-  {
-    "name": "tier",
-    "type": "enum",
-    "filterable": true
-  },
-  {
-    "name": "illuvial_type",
-    "type": "enum",
-    "filterable": true
-  },
-  {
-    "name": "stage",
-    "type": "enum",
-    "filterable": true
-  },
-  {
-    "name": "background_tier",
-    "type": "enum",
-    "filterable": true
-  },
-  {
-    "name": "background_line",
-    "type": "enum",
-    "filterable": true
-  },
-  {
-    "name": "background_stage",
-    "type": "enum",
-    "filterable": true
-  },
-  {
-    "name": "expression",
-    "type": "enum",
-    "filterable": true
-  },
-  {
-    "name": "finish",
-    "type": "enum",
-    "filterable": true
   }
 ]
