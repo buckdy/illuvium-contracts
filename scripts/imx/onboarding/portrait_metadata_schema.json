@@ -7,11 +7,6 @@
     "name": "image_url"
   },
   {
-    "name": "box_type",
-    "type": "enum",
-    "filterable": true
-  },
-  {
     "name": "tier",
     "type": "enum",
     "filterable": true
