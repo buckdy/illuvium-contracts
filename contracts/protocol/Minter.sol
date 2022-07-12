@@ -75,6 +75,8 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
     uint256 private nextPortraitTokenId;
     /// @dev Next accessory token id to mint
     uint256 private nextAccessoryTokenId;
+    uint256 public freePortraitLimitPerTx;
+    uint256 public freeAccessoryLimitPerTx;
 
     /* ======== EVENTS ======== */
     /// @dev Emitted when treasury updated.
@@ -212,6 +214,14 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
         portraitSaleWindow = _saleWindow;
     }
 
+    function setFreeMintLimitPerTx(uint256 _freePortraitLimitPerTx, uint256 _freeAccessoryLimitPerTx)
+        external
+        onlyOwner
+    {
+        freePortraitLimitPerTx = _freePortraitLimitPerTx;
+        freeAccessoryLimitPerTx = _freeAccessoryLimitPerTx;
+    }
+
     /**
      * @dev Set new treasury address.
      * @dev only owner can call this function.
@@ -321,6 +331,8 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
             mintRequest.portraitMintParams.push(param);
         }
 
+        require(!isFree || portraitAmount <= freePortraitLimitPerTx, "Exceed limit");
+
         mintRequest.portraitAmount = portraitAmount;
         mintRequest.portraitStartTokenId = nextPortraitTokenId;
         nextPortraitTokenId += PORTRAIT_MASK * portraitAmount;
@@ -357,6 +369,8 @@ contract Minter is VRFConsumerBaseUpgradeable, UUPSUpgradeable, OwnableUpgradeab
             accessoryAmount += uint256(param.amount);
             mintRequest.accessoryFullRandomMintParams.push(param);
         }
+
+        require(!isFree || accessoryAmount <= freeAccessoryLimitPerTx, "Exceed limit");
 
         mintRequest.accessoryAmount = accessoryAmount;
         mintRequest.accessoryStartTokenId = nextAccessoryTokenId;
