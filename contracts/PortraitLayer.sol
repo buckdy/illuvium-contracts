@@ -13,7 +13,6 @@ import "./DataTypes.sol";
 contract PortraitLayer is BaseIlluvitar {
     /// @dev Portrait Metadata struct
     struct Metadata {
-        BoxType boxType; // box type
         uint8 tier; // tier
         // Bonded accessory token ids
         uint256 skinId; // bonded skin id
@@ -42,14 +41,13 @@ contract PortraitLayer is BaseIlluvitar {
 
     /**
      * @dev Mint Portrait with blueprint.
-     * @dev blueprint has format of `ab,c,d,e,f,g`
-     *      a : box type
-            b : tier
-            c : bonded skin id
-            d : bonded body id
-            e : bonded eye wear id
-            f : bonded head wear id
-            g : bonded props id
+     * @dev blueprint has format of `a,b,c,d,e,f`
+     *      a : tier
+            b : bonded skin id
+            c : bonded body id
+            d : bonded eye wear id
+            e : bonded head wear id
+            f : bonded props id
      * @param to Recipient address
      * @param tokenId Token id
      * @param blueprint Portrait blueprint
@@ -61,7 +59,6 @@ contract PortraitLayer is BaseIlluvitar {
     ) internal override {
         _safeMint(to, tokenId);
         (
-            BoxType boxType,
             uint8 tier,
             uint256 skinTokenId,
             uint256 bodyTokenId,
@@ -70,7 +67,6 @@ contract PortraitLayer is BaseIlluvitar {
             uint256 propsTokenId
         ) = _parseBlueprint(blueprint);
         metadata[tokenId] = Metadata({
-            boxType: boxType,
             tier: tier,
             skinId: skinTokenId,
             bodyId: bodyTokenId,
@@ -86,7 +82,6 @@ contract PortraitLayer is BaseIlluvitar {
         private
         pure
         returns (
-            BoxType boxType,
             uint8 tier,
             uint256 skinTokenId,
             uint256 bodyTokenId,
@@ -100,7 +95,6 @@ contract PortraitLayer is BaseIlluvitar {
 
         p = _skipNonDecimal(blueprint, p);
         require(_isDecimal(blueprint[p + 1]), "Wrong blueprint format");
-        boxType = BoxType(uint8(blueprint[p++]) - 0x30);
         tier = uint8(blueprint[p++]) - 0x30;
         (skinTokenId, p) = _atoi(blueprint, p);
         (bodyTokenId, p) = _atoi(blueprint, p);

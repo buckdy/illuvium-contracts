@@ -12,7 +12,6 @@ import "./DataTypes.sol";
 contract AccessoryLayer is BaseIlluvitar {
     /// @dev Accessory Metadata struct
     struct Metadata {
-        BoxType boxType; // box type
         uint8 tier; // tier
         AccessoryType accessoryType; // accessory type
     }
@@ -50,23 +49,15 @@ contract AccessoryLayer is BaseIlluvitar {
         bytes memory blueprint
     ) internal override {
         _safeMint(to, tokenId);
-        (BoxType boxType, uint8 tier, AccessoryType accessoryType) = _parseBlueprint(blueprint);
-        metadata[tokenId] = Metadata({ boxType: boxType, tier: tier, accessoryType: accessoryType });
+        (uint8 tier, AccessoryType accessoryType) = _parseBlueprint(blueprint);
+        metadata[tokenId] = Metadata({ tier: tier, accessoryType: accessoryType });
         metadataInitialized[tokenId] = true;
     }
 
     /// @dev Parse blueprint
-    function _parseBlueprint(bytes memory blueprint)
-        private
-        pure
-        returns (
-            BoxType boxType,
-            uint8 tier,
-            AccessoryType accessoryType
-        )
-    {
+    function _parseBlueprint(bytes memory blueprint) private pure returns (uint8 tier, AccessoryType accessoryType) {
         uint8 j = 0;
-        uint8[] memory parsedData = new uint8[](3);
+        uint8[] memory parsedData = new uint8[](2);
 
         uint256 len = blueprint.length;
         for (uint256 i = 0; i < len; i += 1) {
@@ -75,7 +66,6 @@ contract AccessoryLayer is BaseIlluvitar {
                 j += 1;
             }
         }
-        boxType = BoxType(parsedData[0]);
         tier = parsedData[1];
         accessoryType = AccessoryType(parsedData[2]);
     }
